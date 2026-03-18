@@ -11,21 +11,20 @@ LUCID_URL = (
     f"@cf/leonardo/lucid-origin"
 )
 
-LOGO_SYSTEM_PROMPT = (
-    "A single professional logo mark, minimal flat vector style, "
-    "perfectly centered on pure white background, "
-    "clean sharp edges, high contrast, scalable design. "
+LOGO_PREFIX = (
+    "Professional brand identity mark. "
 )
 
-LOGO_NEGATIVE = (
-    " No text, no letters, no words, no typography, no watermark, "
-    "no realistic photo, no 3D rendering. "
-    "Simple clean shapes, professional logo quality."
+LOGO_SUFFIX = (
+    " Crisp vector edges, mathematically precise curves. "
+    "Centered on #FFFFFF pure white background. "
+    "No text, no letters, no words, no typography, no watermark. "
+    "Behance portfolio quality, award-winning logo design."
 )
 
 
 async def _generate_lucid(prompt: str) -> str:
-    enhanced = LOGO_SYSTEM_PROMPT + prompt + LOGO_NEGATIVE
+    enhanced = LOGO_PREFIX + prompt + LOGO_SUFFIX
     async with httpx.AsyncClient(timeout=120) as client:
         resp = await client.post(
             LUCID_URL,
@@ -34,8 +33,8 @@ async def _generate_lucid(prompt: str) -> str:
                 "prompt": enhanced,
                 "width": 1024,
                 "height": 1024,
-                "num_steps": 25,
-                "guidance": 7.5,
+                "num_steps": 30,
+                "guidance": 8.0,
             },
         )
         resp.raise_for_status()

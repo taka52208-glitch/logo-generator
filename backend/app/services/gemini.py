@@ -92,34 +92,60 @@ async def analyze_brief(brief_text: str) -> dict:
 
 async def generate_prompts(analysis: dict) -> list[str]:
     analysis_json = json.dumps(analysis, ensure_ascii=False)
-    prompt = f"""You are a world-class AI image prompt engineer specializing in logo design for FLUX.1 model.
+    # Convert Japanese colors to hex codes for better AI image generation
+    color_map = {
+        "青": "#1565C0 blue", "紺": "#1A237E navy", "水色": "#4FC3F7 light blue",
+        "赤": "#D32F2F red", "緑": "#388E3C green", "黄": "#FBC02D yellow",
+        "オレンジ": "#E65100 orange", "紫": "#7B1FA2 purple", "ピンク": "#E91E63 pink",
+        "黒": "#212121 black", "白": "#FFFFFF white", "金": "#C49A6C gold",
+        "茶": "#4E342E brown", "グレー": "#757575 gray",
+        "深いブラウン": "#3E2723 deep brown", "ゴールド": "#C49A6C warm gold",
+        "青色系": "#1565C0 blue", "緑色系": "#388E3C green",
+    }
 
-Requirements:
-{analysis_json}
+    colors_raw = analysis.get("colors", [])
+    colors_hex = []
+    for c in colors_raw:
+        matched = color_map.get(c)
+        if matched:
+            colors_hex.append(matched)
+        else:
+            colors_hex.append(c)
+    color_spec = " and ".join(colors_hex) if colors_hex else "brand-appropriate colors"
 
-Create 4 distinct logo generation prompts. Each prompt must follow this exact structure:
+    keywords = analysis.get("keywords", [])
+    motifs = ", ".join(keywords[:5]) if keywords else "industry-relevant motif"
+    avoid = analysis.get("avoidElements", [])
+    avoid_str = ", ".join(avoid) if avoid else ""
+    style = analysis.get("preferredStyle", "")
 
-[Subject description], [Style keywords], [Color specification], [Composition rules]
+    prompt = f"""You are a senior art director at a top branding agency. Write 4 image generation prompts for a logo icon.
 
-4 APPROACHES (one per prompt):
-1. GEOMETRIC MINIMAL: Use a single clean geometric shape (circle, hexagon, triangle, shield) with the industry concept embedded. Think Apple, Nike simplicity.
-2. SYMBOLIC ICON: One iconic symbol representing the industry. Think Starbucks mermaid, Twitter bird. Bold, recognizable silhouette.
-3. NEGATIVE SPACE: Clever use of negative space to create dual meaning. Think FedEx arrow, NBC peacock. Two shapes forming one.
-4. ABSTRACT MODERN: Flowing, dynamic abstract mark. Think Pepsi globe, Airbnb bélo. Organic curves meeting geometric precision.
+CLIENT BRIEF:
+- Industry: {analysis.get("industry", "")}
+- Concept: {analysis.get("concept", "")}
+- Colors: {color_spec}
+- Mood: {analysis.get("mood", "")}
+- Key motifs: {motifs}
+{f"- Style preference: {style}" if style else ""}
+{f"- AVOID: {avoid_str}" if avoid_str else ""}
 
-MANDATORY RULES:
-- Write in English only
-- Each prompt: 80-120 words, highly detailed
-- Color: use EXACTLY the colors from "colors" field. If "avoidColors" is specified, NEVER use those colors
-- If "keywords" contains specific motifs (e.g., "cherry blossom", "mountain"), incorporate them into the design
-- If "avoidElements" is specified, explicitly exclude those elements
-- If "preferredStyle" is specified (e.g., "Japanese style", "hand-drawn"), reflect that style
-- NEVER include any text/letters/words/typography instructions — the prompt must describe ONLY a visual icon/symbol
-- Include: "single icon mark, flat vector, centered on pure white background"
-- Describe the shape, proportions, and visual weight precisely
-- Reference real design principles: golden ratio, rule of thirds, visual balance
+Write 4 prompts, each describing a DIFFERENT abstract icon/symbol mark (NO text/letters in the image).
 
-Output ONLY a JSON array (no explanation):
+Each prompt MUST:
+1. Start with "Abstract icon mark:" or "Geometric symbol:" or "Symbolic logo mark:"
+2. Describe the exact shapes (e.g., "five overlapping leaf shapes arranged radially")
+3. Specify colors with HEX codes (e.g., "#3E2723 deep brown and #C49A6C warm gold")
+4. End with "Crisp vector edges, centered on pure white #FFFFFF background"
+5. Be 60-90 words
+
+4 DIFFERENT APPROACHES:
+1. GEOMETRIC: Clean shapes (circles, triangles, hexagons) with concept embedded
+2. ORGANIC SYMBOLIC: Nature/industry motif as bold silhouette with negative space
+3. OVERLAPPING FORMS: 2-3 shapes overlapping to create depth and meaning
+4. MONOGRAM/ABSTRACT: Abstract letterform or pure abstract mark
+
+Output ONLY a JSON array:
 ["prompt1", "prompt2", "prompt3", "prompt4"]"""
 
     text = await _call_llm(
