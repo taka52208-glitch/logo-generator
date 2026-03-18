@@ -5,6 +5,7 @@ const initialState = {
   briefText: '',
   analysis: null,
   prompts: [],
+  rawLogos: [],
   logos: [],
   selectedLogoIndex: -1,
   proposalText: '',
@@ -17,6 +18,7 @@ export const useLogoStore = create<LogoGeneratorState>((set) => ({
   setBriefText: (text) => set({ briefText: text }),
   setAnalysis: (analysis) => set({ analysis }),
   setPrompts: (prompts) => set({ prompts }),
+  setRawLogos: (logos) => set({ rawLogos: logos }),
   setLogos: (logos) => set({ logos }),
   addLogo: (logo) => set((state) => ({ logos: [...state.logos, logo] })),
   setSelectedLogoIndex: (index) => set({ selectedLogoIndex: index }),
@@ -27,6 +29,12 @@ export const useLogoStore = create<LogoGeneratorState>((set) => ({
       const logos = [...state.logos];
       logos[index] = logo;
       return { logos };
+    }),
+  replaceRawLogo: (index, logo) =>
+    set((state) => {
+      const rawLogos = [...state.rawLogos];
+      rawLogos[index] = logo;
+      return { rawLogos };
     }),
   replacePrompt: (index, prompt) =>
     set((state) => {

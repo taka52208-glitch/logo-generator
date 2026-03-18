@@ -33,6 +33,7 @@ export interface LogoGeneratorState {
   briefText: string;
   analysis: Analysis | null;
   prompts: string[];
+  rawLogos: string[];
   logos: string[];
   selectedLogoIndex: number;
   proposalText: string;
@@ -42,8 +43,10 @@ export interface LogoGeneratorState {
   setBriefText: (text: string) => void;
   setAnalysis: (analysis: Analysis | null) => void;
   setPrompts: (prompts: string[]) => void;
+  setRawLogos: (logos: string[]) => void;
   setLogos: (logos: string[]) => void;
   addLogo: (logo: string) => void;
+  replaceRawLogo: (index: number, logo: string) => void;
   setSelectedLogoIndex: (index: number) => void;
   setProposalText: (text: string) => void;
   setMockups: (mockups: Mockups | null) => void;

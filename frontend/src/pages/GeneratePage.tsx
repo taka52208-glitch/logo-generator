@@ -67,7 +67,9 @@ export const GeneratePage = () => {
     store.setPrompts(prompts);
 
     store.setLogos([]);
+    store.setRawLogos([]);
     const rawLogos = await logoApi.generateLogos(prompts);
+    store.setRawLogos(rawLogos);
 
     const composedLogos = await Promise.all(
       rawLogos.map((logo) => composeLogoWithText(logo, analysis.companyName))

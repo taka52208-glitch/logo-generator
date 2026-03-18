@@ -18,6 +18,8 @@ import {
   Slider,
   FormControl,
   InputLabel,
+  FormControlLabel,
+  Switch,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
@@ -31,9 +33,6 @@ import { generateAllMockups } from '../utils/mockupGenerator';
 import { composeLogoWithText, FONT_OPTIONS, type ComposeOptions } from '../utils/logoComposer';
 import type { Mockups } from '../types';
 
-// Store raw (icon-only) logo separately for recomposition
-let rawLogoCache: string | null = null;
-
 export const ProposalPage = () => {
   const navigate = useNavigate();
   const store = useLogoStore();
@@ -45,12 +44,14 @@ export const ProposalPage = () => {
   const [revising, setRevising] = useState(false);
 
   // Font customization state
+  const [showText, setShowText] = useState(true);
   const [fontId, setFontId] = useState('mplus');
   const [textColor, setTextColor] = useState('#1a1a2e');
   const [fontSize, setFontSize] = useState(50);
   const [recomposing, setRecomposing] = useState(false);
 
   const selectedLogo = store.logos[store.selectedLogoIndex];
+  const selectedRawLogo = store.rawLogos[store.selectedLogoIndex];
   const selectedPrompt = store.prompts[store.selectedLogoIndex];
   const companyName = store.analysis?.companyName || '';
 
@@ -58,11 +59,6 @@ export const ProposalPage = () => {
     if (!selectedLogo || !store.analysis) {
       navigate('/');
       return;
-    }
-
-    // Cache the current logo as raw for recomposition
-    if (!rawLogoCache) {
-      rawLogoCache = selectedLogo;
     }
 
     if (!store.proposalText) {
@@ -101,15 +97,20 @@ export const ProposalPage = () => {
     }
   };
 
-  const handleRecompose = useCallback(async (opts: ComposeOptions) => {
-    const raw = rawLogoCache;
+  const recompose = useCallback(async (opts: { show: boolean } & ComposeOptions) => {
+    const raw = selectedRawLogo;
     if (!raw) return;
     setRecomposing(true);
     try {
-      const composed = await composeLogoWithText(raw, companyName, opts);
+      let composed: string;
+      if (opts.show) {
+        composed = await composeLogoWithText(raw, companyName, opts);
+      } else {
+        // No text — just use raw logo
+        composed = raw;
+      }
       store.replaceLogo(store.selectedLogoIndex, composed);
 
-      // Regenerate mockups
       const newMockups = await generateAllMockups(composed, companyName);
       setMockups(newMockups);
     } catch {
@@ -117,22 +118,27 @@ export const ProposalPage = () => {
     } finally {
       setRecomposing(false);
     }
-  }, [companyName, store]);
+  }, [selectedRawLogo, companyName, store]);
+
+  const handleShowTextToggle = async (checked: boolean) => {
+    setShowText(checked);
+    await recompose({ show: checked, fontId, textColor, fontSize });
+  };
 
   const handleFontChange = async (newFontId: string) => {
     setFontId(newFontId);
-    await handleRecompose({ fontId: newFontId, textColor, fontSize });
+    await recompose({ show: showText, fontId: newFontId, textColor, fontSize });
   };
 
   const handleColorChange = async (newColor: string) => {
     setTextColor(newColor);
-    await handleRecompose({ fontId, textColor: newColor, fontSize });
+    await recompose({ show: showText, fontId, textColor: newColor, fontSize });
   };
 
   const handleFontSizeCommit = async (_: unknown, newSize: number | number[]) => {
     const size = typeof newSize === 'number' ? newSize : newSize[0];
     setFontSize(size);
-    await handleRecompose({ fontId, textColor, fontSize: size });
+    await recompose({ show: showText, fontId, textColor, fontSize: size });
   };
 
   const handleRevise = async () => {
@@ -144,15 +150,21 @@ export const ProposalPage = () => {
       const revisedPrompt = await logoApi.revisePrompt(selectedPrompt, revisionText.trim());
       const [rawLogo] = await logoApi.generateLogos([revisedPrompt]);
 
-      // Update raw cache
-      rawLogoCache = rawLogo;
-
-      const composedLogo = await composeLogoWithText(rawLogo, companyName, { fontId, textColor, fontSize });
+      // Update raw logo
+      store.replaceRawLogo(store.selectedLogoIndex, rawLogo);
       store.replacePrompt(store.selectedLogoIndex, revisedPrompt);
-      store.replaceLogo(store.selectedLogoIndex, composedLogo);
+
+      // Compose with current text settings
+      let composed: string;
+      if (showText) {
+        composed = await composeLogoWithText(rawLogo, companyName, { fontId, textColor, fontSize });
+      } else {
+        composed = rawLogo;
+      }
+      store.replaceLogo(store.selectedLogoIndex, composed);
 
       setMockupsLoading(true);
-      const newMockups = await generateAllMockups(composedLogo, companyName);
+      const newMockups = await generateAllMockups(composed, companyName);
       setMockups(newMockups);
       setMockupsLoading(false);
 
@@ -189,7 +201,6 @@ export const ProposalPage = () => {
   };
 
   const handleBack = () => {
-    rawLogoCache = null;
     store.setProposalText('');
     store.setStep('selecting');
     navigate('/');
@@ -241,12 +252,8 @@ export const ProposalPage = () => {
                   image={`data:image/png;base64,${selectedLogo}`}
                   alt="選択したロゴ"
                   sx={{
-                    aspectRatio: '1',
-                    objectFit: 'contain',
-                    bgcolor: '#fff',
-                    p: 1,
-                    opacity: isLoading ? 0.3 : 1,
-                    transition: 'opacity 0.3s',
+                    aspectRatio: '1', objectFit: 'contain', bgcolor: '#fff', p: 1,
+                    opacity: isLoading ? 0.3 : 1, transition: 'opacity 0.3s',
                   }}
                 />
                 {isLoading && (
@@ -272,64 +279,73 @@ export const ProposalPage = () => {
 
             {/* テキスト調整 */}
             <Divider sx={{ my: 2 }} />
-            <Typography variant="subtitle2" sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-              <FormatSizeIcon fontSize="small" /> テキスト調整
-            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+              <Typography variant="subtitle2" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                <FormatSizeIcon fontSize="small" /> テキスト調整
+              </Typography>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={showText}
+                    onChange={(e) => handleShowTextToggle(e.target.checked)}
+                    disabled={isLoading}
+                    size="small"
+                  />
+                }
+                label={<Typography variant="body2">表示</Typography>}
+              />
+            </Box>
 
-            <FormControl fullWidth size="small" sx={{ mb: 1.5 }}>
-              <InputLabel>フォント</InputLabel>
-              <Select
-                value={fontId}
-                label="フォント"
-                onChange={(e) => handleFontChange(e.target.value)}
-                disabled={isLoading}
-              >
-                {FONT_OPTIONS.map((f) => (
-                  <MenuItem key={f.id} value={f.id} sx={{ fontFamily: `${f.family}, sans-serif` }}>
-                    {f.label}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+            {showText && (
+              <>
+                <FormControl fullWidth size="small" sx={{ mb: 1.5 }}>
+                  <InputLabel>フォント</InputLabel>
+                  <Select
+                    value={fontId} label="フォント"
+                    onChange={(e) => handleFontChange(e.target.value)}
+                    disabled={isLoading}
+                  >
+                    {FONT_OPTIONS.map((f) => (
+                      <MenuItem key={f.id} value={f.id} sx={{ fontFamily: `${f.family}, sans-serif` }}>
+                        {f.label}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
 
-            <FormControl fullWidth size="small" sx={{ mb: 1.5 }}>
-              <InputLabel>テキスト色</InputLabel>
-              <Select
-                value={textColor}
-                label="テキスト色"
-                onChange={(e) => handleColorChange(e.target.value)}
-                disabled={isLoading}
-              >
-                {colorOptions.map((c) => (
-                  <MenuItem key={c.value} value={c.value}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Box sx={{ width: 16, height: 16, borderRadius: '50%', bgcolor: c.value, border: '1px solid #ddd' }} />
-                      {c.label}
-                    </Box>
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+                <FormControl fullWidth size="small" sx={{ mb: 1.5 }}>
+                  <InputLabel>テキスト色</InputLabel>
+                  <Select
+                    value={textColor} label="テキスト色"
+                    onChange={(e) => handleColorChange(e.target.value)}
+                    disabled={isLoading}
+                  >
+                    {colorOptions.map((c) => (
+                      <MenuItem key={c.value} value={c.value}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Box sx={{ width: 16, height: 16, borderRadius: '50%', bgcolor: c.value, border: '1px solid #ddd' }} />
+                          {c.label}
+                        </Box>
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
 
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
-              テキストサイズ
-            </Typography>
-            <Slider
-              value={fontSize}
-              min={20}
-              max={80}
-              onChange={(_, v) => setFontSize(typeof v === 'number' ? v : v[0])}
-              onChangeCommitted={handleFontSizeCommit}
-              disabled={isLoading}
-              size="small"
-              sx={{ mb: 2 }}
-            />
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                  テキストサイズ
+                </Typography>
+                <Slider
+                  value={fontSize} min={20} max={80}
+                  onChange={(_, v) => setFontSize(typeof v === 'number' ? v : v[0])}
+                  onChangeCommitted={handleFontSizeCommit}
+                  disabled={isLoading} size="small" sx={{ mb: 1 }}
+                />
+              </>
+            )}
 
             {/* ロゴ修正 */}
             <Divider sx={{ my: 2 }} />
-            <Typography variant="subtitle2" sx={{ mb: 1 }}>
-              ロゴを修正する
-            </Typography>
+            <Typography variant="subtitle2" sx={{ mb: 1 }}>ロゴを修正する</Typography>
             <TextField
               label="修正指示"
               placeholder="例: もっと丸みを帯びた形に / 色を明るく / モチーフを桜に変えて"
@@ -365,12 +381,8 @@ export const ProposalPage = () => {
                 {mockupItems.map((item) => (
                   <Grid size={{ xs: 12 }} key={item.label}>
                     <Card>
-                      <CardMedia
-                        component="img"
-                        image={`data:image/png;base64,${item.data}`}
-                        alt={`${item.label}モックアップ`}
-                        sx={{ width: '100%' }}
-                      />
+                      <CardMedia component="img" image={`data:image/png;base64,${item.data}`}
+                        alt={`${item.label}モックアップ`} sx={{ width: '100%' }} />
                       <CardActions sx={{ justifyContent: 'space-between', px: 2 }}>
                         <Typography variant="body2" color="text.secondary">{item.label}</Typography>
                         <Button size="small" startIcon={<DownloadIcon />}
@@ -390,7 +402,6 @@ export const ProposalPage = () => {
               <Button variant="contained" startIcon={<ContentCopyIcon />}
                 onClick={handleCopy} disabled={!store.proposalText || isGenerating}>コピー</Button>
             </Box>
-
             {isGenerating ? (
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, py: 4, justifyContent: 'center' }}>
                 <CircularProgress size={24} />
@@ -405,8 +416,7 @@ export const ProposalPage = () => {
                 sx={{
                   '& .MuiOutlinedInput-root': {
                     fontFamily: '"Noto Sans JP", sans-serif',
-                    fontSize: '0.875rem',
-                    lineHeight: 1.8,
+                    fontSize: '0.875rem', lineHeight: 1.8,
                   },
                 }}
               />
