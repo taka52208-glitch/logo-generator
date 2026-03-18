@@ -198,22 +198,30 @@ async def generate_proposal(analysis: dict, selected_prompt: str) -> str:
 
 
 async def revise_prompt(original_prompt: str, revision_instruction: str) -> str:
-    prompt = f"""Original logo generation prompt:
+    prompt = f"""You must COMPLETELY REWRITE the logo prompt below based on the user's revision request.
+Do NOT just insert a word or two — write a BRAND NEW prompt from scratch that:
+1. Keeps the same core concept/industry/brand
+2. Fully incorporates the user's requested changes into every aspect of the description
+3. Describes specific NEW shapes, forms, and compositions that reflect the revision
+4. Specifies colors with HEX codes
+5. Ends with "Crisp vector edges, centered on pure white #FFFFFF background"
+6. Is 60-90 words
+
+ORIGINAL PROMPT:
 {original_prompt}
 
-User revision request (in Japanese):
+USER'S REVISION REQUEST (Japanese):
 {revision_instruction}
 
-Rewrite the original prompt to incorporate the user's revision.
-Keep the same overall structure, colors, and style unless the user specifically asks to change them.
-Output ONLY the revised prompt in English. No explanation."""
+Example: if user says "もっと丸みを帯びた形にして", you must replace angular shapes with circles, ovals, rounded forms throughout the entire prompt — not just add "rounded".
+
+Write the COMPLETE NEW prompt:"""
 
     import re
     text = await _call_llm(
         prompt,
-        system="You are an expert AI image prompt engineer. Rewrite the prompt incorporating the revision. Output ONLY the revised English prompt. No explanation, no markdown, no thinking tags.",
+        system="You are a senior art director rewriting image generation prompts. FULLY REWRITE the prompt — never just insert a word. Output ONLY the new English prompt. No quotes, no explanation, no markdown.",
     )
     text = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL).strip()
-    # Remove any markdown quotes
     text = text.strip('"').strip("'").strip("`")
     return text
