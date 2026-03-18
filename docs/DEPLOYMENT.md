@@ -2,7 +2,7 @@
 
 ## 本番URL
 
-- **フロントエンド**: https://frontend-dun-five-14.vercel.app
+- **フロントエンド**: https://logo-generator-app-mocha.vercel.app
 - **バックエンド**: https://logo-generator-api-pxg5.onrender.com
 - **リポジトリ**: https://github.com/taka52208-glitch/logo-generator
 

@@ -30,7 +30,7 @@ app.add_middleware(
         "http://localhost:3848",
         "http://127.0.0.1:3847",
         "http://127.0.0.1:3848",
-        "https://frontend-dun-five-14.vercel.app",
+        "https://logo-generator-app-mocha.vercel.app",
     ],
     allow_credentials=True,
     allow_methods=["*"],
