@@ -13,6 +13,8 @@ from app.schemas import (
     GenerateLogosResponse,
     GeneratePromptsRequest,
     GeneratePromptsResponse,
+    GenerateMockupProposalRequest,
+    GenerateMockupProposalResponse,
     GenerateProposalRequest,
     GenerateProposalResponse,
     ReviseFromImageRequest,
@@ -21,7 +23,7 @@ from app.schemas import (
     RevisePromptResponse,
 )
 from app.services.cloudflare import generate_logos
-from app.services.gemini import analyze_brief, generate_prompts, generate_proposal, revise_prompt, revise_from_image
+from app.services.gemini import analyze_brief, generate_prompts, generate_proposal, generate_mockup_proposal, revise_prompt, revise_from_image
 from app.services.scraper import fetch_page_text
 
 app = FastAPI(title="ロゴ作成ジェネレーター API")
@@ -98,6 +100,16 @@ async def api_revise_prompt(req: RevisePromptRequest):
     try:
         revised = await revise_prompt(req.originalPrompt, req.revisionInstruction)
         return RevisePromptResponse(revisedPrompt=revised)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/generate-mockup-proposal", response_model=GenerateMockupProposalResponse)
+async def api_generate_mockup_proposal(req: GenerateMockupProposalRequest):
+    try:
+        analysis_dict = req.analysis.model_dump(by_alias=True)
+        text = await generate_mockup_proposal(analysis_dict, req.selectedPrompt)
+        return GenerateMockupProposalResponse(mockupProposal=text)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

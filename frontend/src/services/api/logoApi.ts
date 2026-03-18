@@ -32,6 +32,11 @@ export const logoApi = {
     return data;
   },
 
+  generateMockupProposal: async (analysis: Analysis, selectedPrompt: string): Promise<string> => {
+    const { data } = await apiClient.post('/api/generate-mockup-proposal', { analysis, selectedPrompt });
+    return data.mockupProposal;
+  },
+
   generateProposal: async (
     analysis: Analysis,
     selectedPrompt: string

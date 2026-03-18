@@ -41,6 +41,8 @@ export const ProposalPage = () => {
   const [mockupsLoading, setMockupsLoading] = useState(false);
   const [revisionText, setRevisionText] = useState('');
   const [revising, setRevising] = useState(false);
+  const [mockupProposal, setMockupProposal] = useState('');
+  const [mockupProposalLoading, setMockupProposalLoading] = useState(false);
 
   // Font customization state
   const [showText, setShowText] = useState(false);
@@ -100,6 +102,24 @@ export const ProposalPage = () => {
       // non-critical
     } finally {
       setMockupsLoading(false);
+    }
+
+    // Generate mockup proposal text in parallel
+    if (store.analysis && selectedPrompt && !mockupProposal) {
+      generateMockupProposalText();
+    }
+  };
+
+  const generateMockupProposalText = async () => {
+    if (!store.analysis || !selectedPrompt) return;
+    setMockupProposalLoading(true);
+    try {
+      const text = await logoApi.generateMockupProposal(store.analysis, selectedPrompt);
+      setMockupProposal(text);
+    } catch {
+      // non-critical
+    } finally {
+      setMockupProposalLoading(false);
     }
   };
 
@@ -176,9 +196,14 @@ export const ProposalPage = () => {
 
       if (store.analysis) {
         store.setProposalText('');
+        setMockupProposal('');
         store.setStep('proposalGenerating');
-        const proposal = await logoApi.generateProposal(store.analysis, revisedPrompt);
+        const [proposal, mockupText] = await Promise.all([
+          logoApi.generateProposal(store.analysis, revisedPrompt),
+          logoApi.generateMockupProposal(store.analysis, revisedPrompt),
+        ]);
         store.setProposalText(proposal);
+        setMockupProposal(mockupText);
         store.setStep('proposal');
       }
 
@@ -417,6 +442,44 @@ export const ProposalPage = () => {
                 />
               </Card>
             ) : null}
+          </Paper>
+
+          {/* モックアップ展開イメージ説明 */}
+          <Paper sx={{ p: 3, mb: 3 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+              <Typography variant="h3">展開イメージ説明</Typography>
+              {mockupProposal && (
+                <Button
+                  size="small"
+                  startIcon={<ContentCopyIcon />}
+                  onClick={async () => {
+                    await navigator.clipboard.writeText(mockupProposal);
+                    setCopySuccess(true);
+                  }}
+                >
+                  コピー
+                </Button>
+              )}
+            </Box>
+            {mockupProposalLoading ? (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, py: 3, justifyContent: 'center' }}>
+                <CircularProgress size={24} />
+                <Typography color="text.secondary">展開イメージ説明を生成中...</Typography>
+              </Box>
+            ) : (
+              <TextField
+                multiline fullWidth minRows={8}
+                value={mockupProposal}
+                onChange={(e) => setMockupProposal(e.target.value)}
+                placeholder="モックアップ活用イメージの説明がここに表示されます..."
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    fontFamily: '"Noto Sans JP", sans-serif',
+                    fontSize: '0.875rem', lineHeight: 1.8,
+                  },
+                }}
+              />
+            )}
           </Paper>
 
           {/* 提案文 */}

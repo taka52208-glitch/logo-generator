@@ -56,6 +56,15 @@ class RevisePromptResponse(BaseModel):
     revisedPrompt: str
 
 
+class GenerateMockupProposalRequest(BaseModel):
+    analysis: Analysis
+    selectedPrompt: str
+
+
+class GenerateMockupProposalResponse(BaseModel):
+    mockupProposal: str
+
+
 class ReviseFromImageRequest(BaseModel):
     imageBase64: str
     revisionInstruction: str = Field(max_length=500)

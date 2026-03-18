@@ -227,6 +227,55 @@ async def generate_proposal(analysis: dict, selected_prompt: str) -> str:
     return text
 
 
+async def generate_mockup_proposal(analysis: dict, selected_prompt: str) -> str:
+    company = analysis.get("companyName", "")
+    industry = analysis.get("industry", "")
+    colors = "、".join(analysis.get("colors", []))
+    mood = analysis.get("mood", "")
+    target = analysis.get("target", "")
+
+    prompt = f"""あなたはブランディングの専門家です。
+以下のロゴデザインが、実際のビジネスシーンでどのように活用されるか、
+クライアントに具体的にイメージしてもらうための「展開イメージ説明文」を生成してください。
+
+【案件情報】
+・会社名: {company}
+・業種: {industry}
+・希望色: {colors}
+・雰囲気: {mood}
+・ターゲット: {target}
+
+【デザインの方向性】
+{selected_prompt}
+
+以下の3つの活用シーンについて、それぞれ2〜3行で具体的に説明してください。
+
+【名刺での活用】
+→ ロゴの配置位置、余白の取り方、紙質との相性、受け取った相手にどんな印象を与えるか
+
+【看板・サイネージでの活用】
+→ 遠目からの視認性、背景色との組み合わせ、昼夜での見え方、通行人への印象
+
+【Webサイト・SNSでの活用】
+→ ヘッダーやファビコンでの見え方、SNSアイコンとしての認識性、スマホ画面での視認性
+
+注意:
+- 「{company}」の名前を使って具体的に書く
+- マークダウン記法は使わない
+- 特殊記号は使わない
+- 見出しは【】のみ
+- 箇条書きの「・」は使ってよい
+- 自然な日本語で簡潔に"""
+
+    import re
+    text = await _call_llm(prompt)
+    text = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL).strip()
+    text = re.sub(r"\*\*([^*]+)\*\*", r"\1", text)
+    text = re.sub(r"^#{1,6}\s*", "", text, flags=re.MULTILINE)
+    text = text.strip()
+    return text
+
+
 async def revise_prompt(original_prompt: str, revision_instruction: str) -> str:
     prompt = f"""You must COMPLETELY REWRITE the logo prompt below based on the user's revision request.
 Do NOT just insert a word or two — write a BRAND NEW prompt from scratch that:
