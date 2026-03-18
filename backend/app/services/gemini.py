@@ -139,11 +139,11 @@ Each prompt MUST:
 4. End with "LARGE icon filling 80% of canvas, crisp vector edges, centered on pure white #FFFFFF background"
 5. Be 60-90 words
 
-4 DIFFERENT APPROACHES:
-1. GEOMETRIC: Clean shapes (circles, triangles, hexagons) with concept embedded
-2. ORGANIC SYMBOLIC: Nature/industry motif as bold silhouette with negative space
-3. OVERLAPPING FORMS: 2-3 shapes overlapping to create depth and meaning
-4. MONOGRAM/ABSTRACT: Abstract letterform or pure abstract mark
+4 RADICALLY DIFFERENT APPROACHES (each must look completely different from the others):
+1. GEOMETRIC EMBLEM: A bold geometric container (circle, shield, hexagon) with the concept embedded as a cutout or inset. Thick lines, solid fills. Think: Starbucks, Porsche, NFL logos.
+2. ORGANIC SILHOUETTE: A single recognizable object/creature/plant as a bold black silhouette with clever negative space details. Think: WWF panda, Twitter bird, Apple logo.
+3. ABSTRACT LETTERFORM: The first letter of the company name transformed into an abstract icon that hints at the industry. Stylized typography as art. Think: Pinterest P, Beats B.
+4. DYNAMIC MARK: Flowing lines, overlapping transparent shapes, or interlocking curves creating movement and energy. Multiple colors with overlap effects. Think: Airbnb, Google Chrome, Olympics rings.
 
 Output ONLY a JSON array:
 ["prompt1", "prompt2", "prompt3", "prompt4"]"""
@@ -156,34 +156,54 @@ Output ONLY a JSON array:
 
 
 async def generate_proposal(analysis: dict, selected_prompt: str) -> str:
-    analysis_json = json.dumps(analysis, ensure_ascii=False)
+    # Build a focused brief from analysis, not raw JSON
+    company = analysis.get("companyName", "")
+    industry = analysis.get("industry", "")
+    concept = analysis.get("concept", "")
+    colors = "、".join(analysis.get("colors", []))
+    mood = analysis.get("mood", "")
+    target = analysis.get("target", "")
+    keywords = "、".join(analysis.get("keywords", []))
+
     prompt = f"""あなたはクラウドソーシングのロゴコンペで勝率の高い提案文を書くプロです。
+以下の案件に対して、この案件だけに特化した提案文を生成してください。
 
-以下の情報から、採用されやすい提案文を日本語で生成してください。
+【この案件の情報】
+・会社名/サービス名: {company}
+・業種: {industry}
+・コンセプト: {concept}
+・希望色: {colors}
+・雰囲気: {mood}
+・ターゲット: {target}
+・キーワード: {keywords}
 
-案件要件:
-{analysis_json}
-
-使用したプロンプト（デザイン方向性の参考）:
+【今回提案するデザインの方向性（英語プロンプトから読み取ってください）】
 {selected_prompt}
 
+上記の情報を元に、「{company}」専用の提案文を書いてください。
+他の案件や一般論ではなく、この案件の固有の要素（業種・コンセプト・ターゲット）に具体的に言及すること。
+
 提案文の構成（必ずこの構成で）:
+
+はじめまして。ご依頼内容を拝読し、提案させていただきます。
+
 【デザインコンセプト】
-→ 3〜5行。企業理念・事業内容とロゴデザインの関連を論理的に説明
+→ 3〜5行。クライアントの事業内容・理念をしっかり踏まえ、なぜこのデザインにしたかの理由を具体的に説明
 
 【配色について】
-→ 色の心理効果と業種との整合性を説明
+→ 選んだ色の心理効果と業種の整合性を説明。「○○色は△△の印象を与え、□□業にふさわしい」のように具体的に
+
+【モチーフ・シンボルについて】
+→ ロゴの形状・シンボルに込めた意味を丁寧に説明。クライアントの要望との紐付けを明確に
 
 【フォントについて】
-→ 推奨フォントの特徴とターゲット層との親和性を説明
-
-【モチーフについて】
-→ ロゴのシンボル・形状に込めた意味を説明
+→ 推奨フォント名を挙げ、その特徴とターゲット層との親和性を説明
 
 【展開イメージ】
-→ 名刺・看板・Webサイト等での活用イメージを説明
+→ 名刺・看板・Webサイト・SNSアイコン等での活用イメージを具体的に説明
 
-最後に「ご要望に応じて修正対応いたします。お気軽にお申し付けください。」を添える。
+【修正対応について】
+→ 「配色変更、形状の微調整、モチーフの変更など、ご要望に応じて何度でも修正対応いたします。お気軽にお申し付けください。」
 
 注意:
 - 「AIで生成しました」とは絶対に書かない

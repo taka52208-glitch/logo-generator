@@ -20,6 +20,7 @@ import {
 } from '@mui/material';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import RefreshIcon from '@mui/icons-material/Refresh';
 import LinkIcon from '@mui/icons-material/Link';
 import { useNavigate } from 'react-router-dom';
 import { useLogoStore } from '../stores/useLogoStore';
@@ -98,6 +99,27 @@ export const GeneratePage = () => {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'エラーが発生しました');
       store.setStep('input');
+    }
+  };
+
+  const [regeneratingIndex, setRegeneratingIndex] = useState<number | null>(null);
+
+  const handleRegenerateSingle = async (index: number) => {
+    if (!store.analysis) return;
+    setRegeneratingIndex(index);
+    try {
+      // Generate a new prompt variant for this slot
+      const prompts = await logoApi.generatePrompts(store.analysis);
+      const newPrompt = prompts[index] || prompts[0];
+      store.replacePrompt(index, newPrompt);
+
+      const [rawLogo] = await logoApi.generateLogos([newPrompt]);
+      store.replaceRawLogo(index, rawLogo);
+      store.replaceLogo(index, rawLogo);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '再生成に失敗しました');
+    } finally {
+      setRegeneratingIndex(null);
     }
   };
 
@@ -258,12 +280,7 @@ export const GeneratePage = () => {
           <Grid container spacing={2}>
             {store.logos.map((logo, index) => (
               <Grid size={{ xs: 6 }} key={index}>
-                <Card
-                  sx={{
-                    cursor: 'pointer',
-                    '&:hover': { transform: 'translateY(-2px)' },
-                  }}
-                >
+                <Card sx={{ position: 'relative' }}>
                   <CardMedia
                     component="img"
                     image={`data:image/png;base64,${logo}`}
@@ -273,16 +290,36 @@ export const GeneratePage = () => {
                       objectFit: 'contain',
                       bgcolor: '#fff',
                       p: 2,
+                      opacity: regeneratingIndex === index ? 0.3 : 1,
+                      transition: 'opacity 0.3s',
                     }}
                   />
-                  <CardActions sx={{ justifyContent: 'center', pb: 2 }}>
+                  {regeneratingIndex === index && (
+                    <Box sx={{
+                      position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      <CircularProgress size={32} />
+                    </Box>
+                  )}
+                  <CardActions sx={{ justifyContent: 'center', gap: 1, pb: 2 }}>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      startIcon={<RefreshIcon />}
+                      onClick={() => handleRegenerateSingle(index)}
+                      disabled={regeneratingIndex !== null}
+                    >
+                      再生成
+                    </Button>
                     <Button
                       variant="contained"
                       size="small"
                       endIcon={<ArrowForwardIcon />}
                       onClick={() => handleSelectLogo(index)}
+                      disabled={regeneratingIndex !== null}
                     >
-                      この案で提案を作る
+                      選択
                     </Button>
                   </CardActions>
                 </Card>
