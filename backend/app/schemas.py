@@ -2,6 +2,7 @@ from pydantic import BaseModel, Field
 
 
 class Analysis(BaseModel):
+    company_name: str = Field(alias="companyName", default="")
     industry: str
     concept: str
     colors: list[str]
@@ -14,7 +15,6 @@ class Analysis(BaseModel):
 
 class AnalyzeRequest(BaseModel):
     briefText: str = Field(max_length=5000)
-    companyName: str = Field(max_length=100)
 
 
 class GeneratePromptsRequest(BaseModel):

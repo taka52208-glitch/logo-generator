@@ -3,7 +3,6 @@ import type { LogoGeneratorState } from '../types';
 
 const initialState = {
   briefText: '',
-  companyName: '',
   analysis: null,
   prompts: [],
   logos: [],
@@ -16,7 +15,6 @@ const initialState = {
 export const useLogoStore = create<LogoGeneratorState>((set) => ({
   ...initialState,
   setBriefText: (text) => set({ briefText: text }),
-  setCompanyName: (name) => set({ companyName: name }),
   setAnalysis: (analysis) => set({ analysis }),
   setPrompts: (prompts) => set({ prompts }),
   setLogos: (logos) => set({ logos }),

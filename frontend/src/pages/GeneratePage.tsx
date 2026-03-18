@@ -59,12 +59,12 @@ export const GeneratePage = () => {
   };
 
   const handleGenerate = async () => {
-    if (!store.briefText.trim() || !store.companyName.trim()) return;
+    if (!store.briefText.trim()) return;
     setError(null);
 
     try {
       store.setStep('analyzing');
-      const analysis = await logoApi.analyze(store.briefText, store.companyName);
+      const analysis = await logoApi.analyze(store.briefText);
       store.setAnalysis(analysis);
 
       store.setStep('generating');
@@ -76,7 +76,7 @@ export const GeneratePage = () => {
 
       // Compose: AI icon + company name text
       const composedLogos = await Promise.all(
-        rawLogos.map((logo) => composeLogoWithText(logo, store.companyName))
+        rawLogos.map((logo) => composeLogoWithText(logo, analysis.companyName))
       );
       store.setLogos(composedLogos);
 
@@ -160,23 +160,12 @@ export const GeneratePage = () => {
           sx={{ mb: 2 }}
         />
 
-        <TextField
-          label="会社名・サービス名"
-          placeholder="例: 株式会社ABC"
-          fullWidth
-          value={store.companyName}
-          onChange={(e) => store.setCompanyName(e.target.value)}
-          disabled={isLoading}
-          inputProps={{ maxLength: 100 }}
-          sx={{ mb: 3 }}
-        />
-
         <Button
           variant="contained"
           size="large"
           fullWidth
           onClick={handleGenerate}
-          disabled={isLoading || !store.briefText.trim() || !store.companyName.trim()}
+          disabled={isLoading || !store.briefText.trim()}
           startIcon={isLoading ? <CircularProgress size={20} color="inherit" /> : <AutoAwesomeIcon />}
           sx={{ py: 1.5 }}
         >

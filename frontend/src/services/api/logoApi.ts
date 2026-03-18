@@ -7,8 +7,8 @@ export const logoApi = {
     return data.text;
   },
 
-  analyze: async (briefText: string, companyName: string): Promise<Analysis> => {
-    const { data } = await apiClient.post('/api/analyze', { briefText, companyName });
+  analyze: async (briefText: string): Promise<Analysis> => {
+    const { data } = await apiClient.post('/api/analyze', { briefText });
     return data;
   },
 

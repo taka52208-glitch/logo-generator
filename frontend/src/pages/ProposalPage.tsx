@@ -67,7 +67,7 @@ export const ProposalPage = () => {
     if (!selectedLogo) return;
     const link = document.createElement('a');
     link.href = `data:image/png;base64,${selectedLogo}`;
-    link.download = `logo_${store.companyName || 'design'}.png`;
+    link.download = `logo_${store.analysis?.companyName || 'design'}.png`;
     link.click();
   };
 
@@ -121,7 +121,7 @@ export const ProposalPage = () => {
               color="text.secondary"
               sx={{ mt: 1.5, textAlign: 'center' }}
             >
-              {store.companyName}
+              {store.analysis?.companyName}
             </Typography>
             <Button
               variant="outlined"

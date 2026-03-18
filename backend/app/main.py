@@ -62,7 +62,7 @@ async def api_fetch_url(req: FetchUrlRequest):
 @app.post("/api/analyze")
 async def api_analyze(req: AnalyzeRequest):
     try:
-        result = await analyze_brief(req.briefText, req.companyName)
+        result = await analyze_brief(req.briefText)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

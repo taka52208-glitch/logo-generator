@@ -1,4 +1,5 @@
 export interface Analysis {
+  companyName: string;
   industry: string;
   concept: string;
   colors: string[];
@@ -23,7 +24,6 @@ export type AppStep =
 
 export interface LogoGeneratorState {
   briefText: string;
-  companyName: string;
   analysis: Analysis | null;
   prompts: string[];
   logos: string[];
@@ -33,7 +33,6 @@ export interface LogoGeneratorState {
   step: AppStep;
 
   setBriefText: (text: string) => void;
-  setCompanyName: (name: string) => void;
   setAnalysis: (analysis: Analysis | null) => void;
   setPrompts: (prompts: string[]) => void;
   setLogos: (logos: string[]) => void;

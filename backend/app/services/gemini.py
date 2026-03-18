@@ -37,7 +37,7 @@ def _extract_json(text: str):
     return json.loads(text[start:end])
 
 
-async def analyze_brief(brief_text: str, company_name: str) -> dict:
+async def analyze_brief(brief_text: str) -> dict:
     prompt = f"""あなたはロゴデザインの専門家です。
 以下のクラウドソーシングのロゴコンペの案件説明文を分析し、
 ロゴ制作に必要な要件を構造化してください。
@@ -45,11 +45,9 @@ async def analyze_brief(brief_text: str, company_name: str) -> dict:
 案件説明文:
 {brief_text}
 
-会社名/サービス名:
-{company_name}
-
 以下のJSON形式のみ出力してください（説明不要、JSONのみ）:
 {{
+  "companyName": "案件から読み取れる会社名またはサービス名",
   "industry": "業種（例: IT、飲食、医療）",
   "concept": "コンセプト（50字以内）",
   "colors": ["推奨色1", "推奨色2"],
