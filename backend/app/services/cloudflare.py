@@ -99,58 +99,52 @@ async def _generate_gemini(prompt: str) -> str:
 
 def _autocrop_and_enlarge(b64_image: str, target_fill: float = 0.80) -> str:
     """Detect the icon on white bg, crop it, and re-center at target_fill ratio."""
-    img_bytes = base64.b64decode(b64_image)
-    img = Image.open(io.BytesIO(img_bytes)).convert("RGBA")
-    w, h = img.size
+    try:
+        img_bytes = base64.b64decode(b64_image)
+        img = Image.open(io.BytesIO(img_bytes)).convert("RGB")
+        w, h = img.size
 
-    # Create mask: non-white pixels (threshold 240)
-    pixels = img.load()
-    bbox = None
-    min_x, min_y, max_x, max_y = w, h, 0, 0
-    for y in range(h):
-        for x in range(w):
-            r, g, b, a = pixels[x, y]
-            if r < 240 or g < 240 or b < 240:
-                min_x = min(min_x, x)
-                min_y = min(min_y, y)
-                max_x = max(max_x, x)
-                max_y = max(max_y, y)
+        # Use Pillow's built-in getbbox on inverted image (fast C implementation)
+        from PIL import ImageChops
+        bg = Image.new("RGB", (w, h), (255, 255, 255))
+        diff = ImageChops.difference(img, bg)
+        # Convert to grayscale and apply threshold
+        gray = diff.convert("L")
+        bbox = gray.getbbox()
 
-    if max_x <= min_x or max_y <= min_y:
-        return b64_image  # No content found
+        if not bbox:
+            return b64_image
 
-    # Add small padding
-    pad = 10
-    min_x = max(0, min_x - pad)
-    min_y = max(0, min_y - pad)
-    max_x = min(w, max_x + pad)
-    max_y = min(h, max_y + pad)
+        # Add padding
+        pad = 10
+        min_x = max(0, bbox[0] - pad)
+        min_y = max(0, bbox[1] - pad)
+        max_x = min(w, bbox[2] + pad)
+        max_y = min(h, bbox[3] + pad)
 
-    # Crop
-    cropped = img.crop((min_x, min_y, max_x, max_y))
-    cw, ch = cropped.size
+        cropped = img.crop((min_x, min_y, max_x, max_y))
+        cw, ch = cropped.size
 
-    # Calculate scale to fill target_fill of canvas
-    icon_ratio = max(cw, ch) / max(w, h)
-    if icon_ratio >= target_fill - 0.05:
-        return b64_image  # Already large enough
+        icon_ratio = max(cw, ch) / max(w, h)
+        if icon_ratio >= target_fill - 0.05:
+            return b64_image
 
-    target_size = int(max(w, h) * target_fill)
-    scale = target_size / max(cw, ch)
-    new_w = int(cw * scale)
-    new_h = int(ch * scale)
-    resized = cropped.resize((new_w, new_h), Image.LANCZOS)
+        target_size = int(max(w, h) * target_fill)
+        scale = target_size / max(cw, ch)
+        new_w = int(cw * scale)
+        new_h = int(ch * scale)
+        resized = cropped.resize((new_w, new_h), Image.LANCZOS)
 
-    # Place on white canvas
-    canvas = Image.new("RGBA", (w, h), (255, 255, 255, 255))
-    offset_x = (w - new_w) // 2
-    offset_y = (h - new_h) // 2
-    canvas.paste(resized, (offset_x, offset_y), resized)
+        canvas = Image.new("RGB", (w, h), (255, 255, 255))
+        offset_x = (w - new_w) // 2
+        offset_y = (h - new_h) // 2
+        canvas.paste(resized, (offset_x, offset_y))
 
-    # Convert back to base64
-    out = io.BytesIO()
-    canvas.convert("RGB").save(out, format="PNG")
-    return base64.b64encode(out.getvalue()).decode("utf-8")
+        out = io.BytesIO()
+        canvas.save(out, format="PNG")
+        return base64.b64encode(out.getvalue()).decode("utf-8")
+    except Exception:
+        return b64_image  # Return original on any error
 
 
 # --- Public API: Lucid Origin → Gemini → error ---
@@ -158,8 +152,12 @@ def _autocrop_and_enlarge(b64_image: str, target_fill: float = 0.80) -> str:
 async def _generate_single_logo(prompt: str) -> str:
     try:
         raw = await _generate_lucid(prompt)
-    except Exception:
-        raw = await _generate_gemini(prompt)
+    except Exception as e:
+        print(f"[WARN] Lucid Origin failed: {e}, trying Gemini fallback")
+        try:
+            raw = await _generate_gemini(prompt)
+        except Exception as e2:
+            raise ValueError(f"All image generators failed. Lucid: {e}, Gemini: {e2}")
     return _autocrop_and_enlarge(raw)
 
 
