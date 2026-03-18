@@ -1,4 +1,4 @@
-const FONT_FAMILY = '"Noto Sans JP", "Helvetica Neue", Arial, sans-serif';
+const FONT_FAMILY = '"M PLUS 1p", "Zen Kaku Gothic New", "Noto Sans JP", sans-serif';
 
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {

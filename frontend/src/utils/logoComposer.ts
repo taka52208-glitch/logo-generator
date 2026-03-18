@@ -1,13 +1,42 @@
 const CANVAS_SIZE = 1024;
-const ICON_SIZE = 500;
-const ICON_Y = 120;
-const TEXT_Y_OFFSET = 80;
+const ICON_SIZE = 520;
+const ICON_Y = 100;
+const TEXT_Y_OFFSET = 70;
+
+// Google Fonts to load for professional logo text
+const GOOGLE_FONTS = [
+  'Noto+Sans+JP:wght@400;700',
+  'Zen+Kaku+Gothic+New:wght@400;700',
+  'M+PLUS+1p:wght@400;700;800',
+];
+
+let fontsLoaded = false;
+
+async function loadGoogleFonts(): Promise<void> {
+  if (fontsLoaded) return;
+
+  const families = GOOGLE_FONTS.map((f) => `family=${f}`).join('&');
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.href = `https://fonts.googleapis.com/css2?${families}&display=swap`;
+  document.head.appendChild(link);
+
+  // Wait for fonts to be ready
+  await document.fonts.ready;
+
+  // Extra wait to ensure rendering
+  await new Promise((r) => setTimeout(r, 300));
+  fontsLoaded = true;
+}
+
+const FONT_PRIMARY = '"M PLUS 1p", "Zen Kaku Gothic New", "Noto Sans JP", sans-serif';
 
 export async function composeLogoWithText(
   base64Logo: string,
   companyName: string,
-  fontFamily = '"Noto Sans JP", "Helvetica Neue", Arial, sans-serif',
 ): Promise<string> {
+  await loadGoogleFonts();
+
   const canvas = document.createElement('canvas');
   canvas.width = CANVAS_SIZE;
   canvas.height = CANVAS_SIZE;
@@ -24,21 +53,43 @@ export async function composeLogoWithText(
 
   // Draw company name below the icon
   const textY = ICON_Y + ICON_SIZE + TEXT_Y_OFFSET;
-  ctx.fillStyle = '#1e293b';
+  ctx.fillStyle = '#1a1a2e';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
 
-  // Auto-size font to fit
-  let fontSize = 64;
-  ctx.font = `bold ${fontSize}px ${fontFamily}`;
-  while (ctx.measureText(companyName).width > CANVAS_SIZE * 0.85 && fontSize > 24) {
+  // Auto-size font to fit — use weight 700 for professional look
+  let fontSize = 56;
+  ctx.font = `700 ${fontSize}px ${FONT_PRIMARY}`;
+  while (ctx.measureText(companyName).width > CANVAS_SIZE * 0.8 && fontSize > 20) {
     fontSize -= 2;
-    ctx.font = `bold ${fontSize}px ${fontFamily}`;
+    ctx.font = `700 ${fontSize}px ${FONT_PRIMARY}`;
   }
 
   ctx.fillText(companyName, CANVAS_SIZE / 2, textY);
 
-  // Return as base64 (without data:image/png;base64, prefix)
+  // Subtle letter-spacing effect: if company name is short, add tracking
+  // (Canvas doesn't support letter-spacing natively, so we draw char by char for short names)
+  if (companyName.length <= 10 && companyName.length > 0) {
+    const spacing = fontSize * 0.15;
+    const totalWidth = Array.from(companyName).reduce(
+      (sum, ch) => sum + ctx.measureText(ch).width + spacing,
+      -spacing
+    );
+    if (totalWidth <= CANVAS_SIZE * 0.85) {
+      // Clear the text we just drew
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, textY - fontSize, CANVAS_SIZE, fontSize * 2);
+      ctx.fillStyle = '#1a1a2e';
+
+      let x = (CANVAS_SIZE - totalWidth) / 2;
+      for (const ch of companyName) {
+        const w = ctx.measureText(ch).width;
+        ctx.fillText(ch, x + w / 2, textY);
+        x += w + spacing;
+      }
+    }
+  }
+
   return canvas.toDataURL('image/png').replace('data:image/png;base64,', '');
 }
 

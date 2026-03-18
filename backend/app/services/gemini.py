@@ -6,7 +6,12 @@ GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 GROQ_MODEL = "qwen/qwen3-32b"
 
 
-async def _call_llm(prompt: str) -> str:
+async def _call_llm(prompt: str, *, system: str = "") -> str:
+    messages = []
+    if system:
+        messages.append({"role": "system", "content": system})
+    messages.append({"role": "user", "content": prompt})
+
     async with httpx.AsyncClient(timeout=60) as client:
         resp = await client.post(
             GROQ_URL,
@@ -16,7 +21,7 @@ async def _call_llm(prompt: str) -> str:
             },
             json={
                 "model": GROQ_MODEL,
-                "messages": [{"role": "user", "content": prompt}],
+                "messages": messages,
                 "temperature": 0.7,
             },
         )
@@ -117,7 +122,10 @@ MANDATORY RULES:
 Output ONLY a JSON array (no explanation):
 ["prompt1", "prompt2", "prompt3", "prompt4"]"""
 
-    text = await _call_llm(prompt)
+    text = await _call_llm(
+        prompt,
+        system="You are an expert AI image prompt engineer. You MUST write ALL prompts in English only. Output ONLY valid JSON. No explanation, no markdown, no thinking tags.",
+    )
     return _extract_json(text)
 
 
