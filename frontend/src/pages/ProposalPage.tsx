@@ -45,6 +45,7 @@ export const ProposalPage = () => {
 
   // Font customization state
   const [showText, setShowText] = useState(false);
+  const [logoText, setLogoText] = useState(store.analysis?.companyName || '');
   const [fontId, setFontId] = useState('mplus');
   const [textColor, setTextColor] = useState('#1a1a2e');
   const [fontSize, setFontSize] = useState(50);
@@ -102,21 +103,20 @@ export const ProposalPage = () => {
     }
   };
 
-  const recompose = useCallback(async (opts: { show: boolean } & ComposeOptions) => {
+  const recompose = useCallback(async (opts: { show: boolean; text: string } & ComposeOptions) => {
     const raw = selectedRawLogo;
     if (!raw) return;
     setRecomposing(true);
     try {
       let composed: string;
-      if (opts.show) {
-        composed = await composeLogoWithText(raw, companyName, opts);
+      if (opts.show && opts.text.trim()) {
+        composed = await composeLogoWithText(raw, opts.text, opts);
       } else {
-        // No text — just use raw logo
         composed = raw;
       }
       store.replaceLogo(store.selectedLogoIndex, composed);
 
-      const newMockups = await generateAllMockups(composed, companyName);
+      const newMockups = await generateAllMockups(composed, opts.text || companyName);
       setMockups(newMockups);
     } catch {
       // non-critical
@@ -127,23 +127,27 @@ export const ProposalPage = () => {
 
   const handleShowTextToggle = async (checked: boolean) => {
     setShowText(checked);
-    await recompose({ show: checked, fontId, textColor, fontSize });
+    await recompose({ show: checked, text: logoText, fontId, textColor, fontSize });
   };
 
   const handleFontChange = async (newFontId: string) => {
     setFontId(newFontId);
-    await recompose({ show: showText, fontId: newFontId, textColor, fontSize });
+    await recompose({ show: showText, text: logoText, fontId: newFontId, textColor, fontSize });
   };
 
   const handleColorChange = async (newColor: string) => {
     setTextColor(newColor);
-    await recompose({ show: showText, fontId, textColor: newColor, fontSize });
+    await recompose({ show: showText, text: logoText, fontId, textColor: newColor, fontSize });
   };
 
   const handleFontSizeCommit = async (_: unknown, newSize: number | number[]) => {
     const size = typeof newSize === 'number' ? newSize : newSize[0];
     setFontSize(size);
-    await recompose({ show: showText, fontId, textColor, fontSize: size });
+    await recompose({ show: showText, text: logoText, fontId, textColor, fontSize: size });
+  };
+
+  const handleTextApply = async () => {
+    await recompose({ show: showText, text: logoText, fontId, textColor, fontSize });
   };
 
   const handleRevise = async () => {
@@ -161,8 +165,8 @@ export const ProposalPage = () => {
 
       // Compose with current text settings
       let composed: string;
-      if (showText) {
-        composed = await composeLogoWithText(rawLogo, companyName, { fontId, textColor, fontSize });
+      if (showText && logoText.trim()) {
+        composed = await composeLogoWithText(rawLogo, logoText, { fontId, textColor, fontSize });
       } else {
         composed = rawLogo;
       }
@@ -303,6 +307,27 @@ export const ProposalPage = () => {
 
             {showText && (
               <>
+                <Box sx={{ display: 'flex', gap: 1, mb: 1.5 }}>
+                  <TextField
+                    label="テキスト"
+                    value={logoText}
+                    onChange={(e) => setLogoText(e.target.value)}
+                    disabled={isLoading}
+                    size="small"
+                    fullWidth
+                    inputProps={{ maxLength: 50 }}
+                  />
+                  <Button
+                    variant="outlined"
+                    onClick={handleTextApply}
+                    disabled={isLoading}
+                    sx={{ minWidth: 60, whiteSpace: 'nowrap' }}
+                    size="small"
+                  >
+                    適用
+                  </Button>
+                </Box>
+
                 <FormControl fullWidth size="small" sx={{ mb: 1.5 }}>
                   <InputLabel>フォント</InputLabel>
                   <Select
