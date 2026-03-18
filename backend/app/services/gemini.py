@@ -136,7 +136,7 @@ Each prompt MUST:
 1. Start with "Abstract icon mark:" or "Geometric symbol:" or "Symbolic logo mark:"
 2. Describe the exact shapes (e.g., "five overlapping leaf shapes arranged radially")
 3. Specify colors with HEX codes (e.g., "#3E2723 deep brown and #C49A6C warm gold")
-4. End with "Crisp vector edges, centered on pure white #FFFFFF background"
+4. End with "LARGE icon filling 80% of canvas, crisp vector edges, centered on pure white #FFFFFF background"
 5. Be 60-90 words
 
 4 DIFFERENT APPROACHES:
