@@ -76,28 +76,32 @@ async def analyze_brief(brief_text: str) -> dict:
 
 async def generate_prompts(analysis: dict) -> list[str]:
     analysis_json = json.dumps(analysis, ensure_ascii=False)
-    prompt = f"""あなたは世界トップクラスのAI画像生成プロンプトエンジニアです。
-以下の要件から、FLUX.1用のロゴ生成プロンプトを4パターン作成してください。
+    prompt = f"""You are a world-class AI image prompt engineer specializing in logo design for FLUX.1 model.
 
-要件:
+Requirements:
 {analysis_json}
 
-【重要ルール】
-1. 英語で出力
-2. 各プロンプトは以下の4つの異なるアプローチ:
-   - パターン1: ミニマル幾何学（円、三角、六角形等のシンプルな幾何学図形）
-   - パターン2: 業種を象徴するシンボル（具体的なモチーフ）
-   - パターン3: ネガティブスペース活用（余白で別の形を表現）
-   - パターン4: 抽象的・モダンなマーク（流線型、グラデーション的表現）
-3. 絶対に文字・テキスト・アルファベットを含めない指示を入れる
-   → 必ず "no text, no letters, no words, no typography" を含める
-4. 必ず以下を含める:
-   → "single icon mark, minimal flat vector logo, on pure white background"
-5. 色は英語の色名で指定（1-2色に限定）
-6. 各プロンプトは60-100語程度の詳細な記述にする
+Create 4 distinct logo generation prompts. Each prompt must follow this exact structure:
 
-以下のJSON配列のみ出力（説明不要、JSON配列のみ）:
-["プロンプト1", "プロンプト2", "プロンプト3", "プロンプト4"]"""
+[Subject description], [Style keywords], [Color specification], [Composition rules]
+
+4 APPROACHES (one per prompt):
+1. GEOMETRIC MINIMAL: Use a single clean geometric shape (circle, hexagon, triangle, shield) with the industry concept embedded. Think Apple, Nike simplicity.
+2. SYMBOLIC ICON: One iconic symbol representing the industry. Think Starbucks mermaid, Twitter bird. Bold, recognizable silhouette.
+3. NEGATIVE SPACE: Clever use of negative space to create dual meaning. Think FedEx arrow, NBC peacock. Two shapes forming one.
+4. ABSTRACT MODERN: Flowing, dynamic abstract mark. Think Pepsi globe, Airbnb bélo. Organic curves meeting geometric precision.
+
+MANDATORY RULES:
+- Write in English only
+- Each prompt: 80-120 words, highly detailed
+- Color: specify exact color names (e.g., "deep navy blue and warm coral")
+- NEVER include any text/letters/words/typography instructions — the prompt must describe ONLY a visual icon/symbol
+- Include: "single icon mark, flat vector, centered on pure white background"
+- Describe the shape, proportions, and visual weight precisely
+- Reference real design principles: golden ratio, rule of thirds, visual balance
+
+Output ONLY a JSON array (no explanation):
+["prompt1", "prompt2", "prompt3", "prompt4"]"""
 
     text = await _call_llm(prompt)
     return _extract_json(text)

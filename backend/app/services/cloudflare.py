@@ -9,25 +9,33 @@ FLUX_URL = (
     f"@cf/black-forest-labs/flux-1-schnell"
 )
 
+LOGO_QUALITY_PREFIX = (
+    "A single professional logo mark, minimal flat vector style, "
+    "perfectly centered on pure white background, "
+    "clean sharp edges, high contrast, scalable design. "
+)
+
 LOGO_QUALITY_SUFFIX = (
-    ", professional logo design, scalable, high contrast, "
-    "clean sharp edges, centered composition, "
-    "isolated on pure white background, no text, no letters, "
-    "no watermark, vector style, Adobe Illustrator quality"
+    " No text, no letters, no words, no typography, no watermark. "
+    "Simple geometric shapes, 2-3 colors maximum, "
+    "award-winning logo design, Dribbble trending, "
+    "SVG-quality precision, negative space mastery, "
+    "golden ratio proportions, pixel-perfect symmetry."
 )
 
 
 async def _generate_single_logo(prompt: str) -> str:
-    enhanced_prompt = prompt + LOGO_QUALITY_SUFFIX
+    enhanced_prompt = LOGO_QUALITY_PREFIX + prompt + LOGO_QUALITY_SUFFIX
     async with httpx.AsyncClient(timeout=120) as client:
         resp = await client.post(
             FLUX_URL,
             headers={"Authorization": f"Bearer {CLOUDFLARE_API_TOKEN}"},
             json={
                 "prompt": enhanced_prompt,
-                "steps": 8,
+                "num_steps": 20,
                 "width": 1024,
                 "height": 1024,
+                "guidance": 7.5,
             },
         )
         resp.raise_for_status()
