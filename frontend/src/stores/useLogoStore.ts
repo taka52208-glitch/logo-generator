@@ -22,6 +22,18 @@ export const useLogoStore = create<LogoGeneratorState>((set) => ({
   setSelectedLogoIndex: (index) => set({ selectedLogoIndex: index }),
   setProposalText: (text) => set({ proposalText: text }),
   setMockups: (mockups) => set({ mockups }),
+  replaceLogo: (index, logo) =>
+    set((state) => {
+      const logos = [...state.logos];
+      logos[index] = logo;
+      return { logos };
+    }),
+  replacePrompt: (index, prompt) =>
+    set((state) => {
+      const prompts = [...state.prompts];
+      prompts[index] = prompt;
+      return { prompts };
+    }),
   setStep: (step) => set({ step }),
   reset: () => set(initialState),
 }));

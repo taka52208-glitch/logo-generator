@@ -25,6 +25,7 @@ export type AppStep =
   | 'analyzing'
   | 'generating'
   | 'selecting'
+  | 'revising'
   | 'proposal'
   | 'proposalGenerating';
 
@@ -46,6 +47,8 @@ export interface LogoGeneratorState {
   setSelectedLogoIndex: (index: number) => void;
   setProposalText: (text: string) => void;
   setMockups: (mockups: Mockups | null) => void;
+  replaceLogo: (index: number, logo: string) => void;
+  replacePrompt: (index: number, prompt: string) => void;
   setStep: (step: AppStep) => void;
   reset: () => void;
 }

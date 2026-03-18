@@ -195,3 +195,25 @@ async def generate_proposal(analysis: dict, selected_prompt: str) -> str:
     text = await _call_llm(prompt)
     text = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL).strip()
     return text
+
+
+async def revise_prompt(original_prompt: str, revision_instruction: str) -> str:
+    prompt = f"""Original logo generation prompt:
+{original_prompt}
+
+User revision request (in Japanese):
+{revision_instruction}
+
+Rewrite the original prompt to incorporate the user's revision.
+Keep the same overall structure, colors, and style unless the user specifically asks to change them.
+Output ONLY the revised prompt in English. No explanation."""
+
+    import re
+    text = await _call_llm(
+        prompt,
+        system="You are an expert AI image prompt engineer. Rewrite the prompt incorporating the revision. Output ONLY the revised English prompt. No explanation, no markdown, no thinking tags.",
+    )
+    text = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL).strip()
+    # Remove any markdown quotes
+    text = text.strip('"').strip("'").strip("`")
+    return text

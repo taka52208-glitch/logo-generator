@@ -15,9 +15,11 @@ from app.schemas import (
     GeneratePromptsResponse,
     GenerateProposalRequest,
     GenerateProposalResponse,
+    RevisePromptRequest,
+    RevisePromptResponse,
 )
 from app.services.cloudflare import generate_logos
-from app.services.gemini import analyze_brief, generate_prompts, generate_proposal
+from app.services.gemini import analyze_brief, generate_prompts, generate_proposal, revise_prompt
 from app.services.scraper import fetch_page_text
 
 app = FastAPI(title="ロゴ作成ジェネレーター API")
@@ -85,6 +87,15 @@ async def api_generate_logos(req: GenerateLogosRequest):
     try:
         logos = await generate_logos(req.prompts)
         return GenerateLogosResponse(logos=logos)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/revise-prompt", response_model=RevisePromptResponse)
+async def api_revise_prompt(req: RevisePromptRequest):
+    try:
+        revised = await revise_prompt(req.originalPrompt, req.revisionInstruction)
+        return RevisePromptResponse(revisedPrompt=revised)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

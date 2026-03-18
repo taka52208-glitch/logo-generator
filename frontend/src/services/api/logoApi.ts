@@ -22,6 +22,11 @@ export const logoApi = {
     return data.logos;
   },
 
+  revisePrompt: async (originalPrompt: string, revisionInstruction: string): Promise<string> => {
+    const { data } = await apiClient.post('/api/revise-prompt', { originalPrompt, revisionInstruction });
+    return data.revisedPrompt;
+  },
+
   generateProposal: async (
     analysis: Analysis,
     selectedPrompt: string

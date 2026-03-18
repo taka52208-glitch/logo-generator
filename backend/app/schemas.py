@@ -47,6 +47,15 @@ class GenerateProposalResponse(BaseModel):
     proposal: str
 
 
+class RevisePromptRequest(BaseModel):
+    originalPrompt: str
+    revisionInstruction: str = Field(max_length=500)
+
+
+class RevisePromptResponse(BaseModel):
+    revisedPrompt: str
+
+
 class FetchUrlRequest(BaseModel):
     url: str
 
