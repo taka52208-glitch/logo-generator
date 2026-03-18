@@ -189,11 +189,21 @@ async def generate_proposal(analysis: dict, selected_prompt: str) -> str:
 - 「AIで生成しました」とは絶対に書かない
 - プロのデザイナーとして自信を持った語調で
 - クライアントの要望を深く理解していることが伝わる文章に
-- 提案文のみ出力（余計な説明不要）"""
+- 提案文のみ出力（余計な説明不要）
+- マークダウン記法（**, ##, ```等）は絶対に使わない
+- 特殊記号（★、☆、●、◆、→、＞、※、♪、△等）は使わない
+- 見出しは【】のみ使用し、装飾記号は一切不要
+- 箇条書きの「・」は使ってよい
+- 自然な日本語の文章で、読みやすくシンプルに"""
 
     import re
     text = await _call_llm(prompt)
     text = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL).strip()
+    # Remove markdown artifacts
+    text = re.sub(r"\*\*([^*]+)\*\*", r"\1", text)
+    text = re.sub(r"^#{1,6}\s*", "", text, flags=re.MULTILINE)
+    text = re.sub(r"```[^`]*```", "", text, flags=re.DOTALL)
+    text = text.strip()
     return text
 
 
