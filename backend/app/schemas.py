@@ -9,6 +9,11 @@ class Analysis(BaseModel):
     mood: str
     target: str
     logo_type: str = Field(alias="logoType", default="combination")
+    keywords: list[str] = Field(default_factory=list)
+    avoid_colors: list[str] = Field(alias="avoidColors", default_factory=list)
+    avoid_elements: list[str] = Field(alias="avoidElements", default_factory=list)
+    preferred_style: str = Field(alias="preferredStyle", default="")
+    additional_notes: str = Field(alias="additionalNotes", default="")
 
     model_config = {"populate_by_name": True}
 

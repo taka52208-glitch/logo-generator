@@ -6,6 +6,11 @@ export interface Analysis {
   mood: string;
   target: string;
   logoType: 'symbol' | 'wordmark' | 'combination';
+  keywords?: string[];
+  avoidColors?: string[];
+  avoidElements?: string[];
+  preferredStyle?: string;
+  additionalNotes?: string;
 }
 
 export interface Mockups {

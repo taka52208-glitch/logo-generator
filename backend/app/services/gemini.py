@@ -39,7 +39,7 @@ def _extract_json(text: str):
 
 async def analyze_brief(brief_text: str) -> dict:
     prompt = f"""あなたはロゴデザインの専門家です。
-以下のクラウドソーシングのロゴコンペの案件説明文を分析し、
+以下のクラウドソーシングのロゴコンペの案件説明文を**一行も見逃さず**精読し、
 ロゴ制作に必要な要件を構造化してください。
 
 案件説明文:
@@ -47,16 +47,29 @@ async def analyze_brief(brief_text: str) -> dict:
 
 以下のJSON形式のみ出力してください（説明不要、JSONのみ）:
 {{
-  "companyName": "案件から読み取れる会社名またはサービス名",
-  "industry": "業種（例: IT、飲食、医療）",
-  "concept": "コンセプト（50字以内）",
-  "colors": ["推奨色1", "推奨色2"],
-  "mood": "雰囲気（例: モダン、温かい、高級感）",
-  "target": "ターゲット層",
-  "logoType": "推奨ロゴタイプ（symbol/wordmark/combination）"
+  "companyName": "会社名・サービス名・店舗名・ブランド名・屋号のいずれか。案件文中に明示されている名称を優先。見つからない場合は空文字",
+  "industry": "業種（例: IT、飲食、医療、美容、建設、教育）",
+  "concept": "ロゴに込めたいコンセプトや世界観（50字以内）",
+  "colors": ["案件に色指定があれば必ずその色を入れる。指定がなければ業種セオリーに基づく推奨色"],
+  "mood": "雰囲気・トーン（例: モダン、温かい、高級感、ナチュラル、ポップ）",
+  "target": "ターゲット層（年齢・性別・属性など案件文から読み取れる情報）",
+  "logoType": "推奨ロゴタイプ（symbol/wordmark/combination）",
+  "keywords": ["案件文に登場する重要キーワード・コンセプトワード・モチーフ候補の単語リスト"],
+  "avoidColors": ["案件文で『使わないでほしい』『避けてほしい』と明示されている色。なければ空配列"],
+  "avoidElements": ["案件文でNGとされているデザイン要素・表現・モチーフ。なければ空配列"],
+  "preferredStyle": "案件文でクライアントが言及しているスタイル・デザイン傾向（例: シンプル、手書き風、和風）。なければ空文字",
+  "additionalNotes": "サイズ・納品形式・締切・修正回数・参考サイトURLなど、上記項目に収まらない具体的な要求事項。なければ空文字"
 }}
 
-業種別の配色セオリー:
+抽出ルール（必ず守ること）:
+1. 色に関して: 案件文に「○○色」「#XXXXXX」「RGBで〜」等の具体的な色指定があれば、colors に必ずその値を入れる。「青系」「暖色系」のような抽象表現も忠実に反映する
+2. モチーフに関して: 「桜」「山」「波」「鳥」等の具体的なモチーフの言及があれば keywords に含める
+3. 形状に関して: 「丸いイメージ」「角ばった感じ」等の形状指定は additionalNotes または keywords に反映する
+4. NGに関して: 「派手にしないで」「複雑にしないで」「文字だけはNG」等の否定表現は avoidElements に含める
+5. companyName: 「株式会社〜」「〜サロン」「〜屋」「〜.com」等、固有名詞として機能している名称を正確に抽出する
+6. 案件文に情報がない項目は推測せず、文字列なら空文字、配列なら空配列を返す
+
+業種別の配色セオリー（案件に色指定がない場合のみ使用）:
 - IT・テクノロジー: 青、紺（知性、信頼性）
 - 飲食・食品: 赤、オレンジ、黄（食欲増進）
 - 医療・ヘルスケア: 青、緑、白（清潔感）
@@ -66,9 +79,7 @@ async def analyze_brief(brief_text: str) -> dict:
 - 法律・士業: 紺、茶、金（格式）
 - 環境・エコ: 緑（自然、持続可能性）
 - 教育: 青、緑、オレンジ（知性、成長）
-- スポーツ: 赤、青、黒（情熱、躍動感）
-
-案件説明文に色の指定がある場合はそれを優先してください。"""
+- スポーツ: 赤、青、黒（情熱、躍動感）"""
 
     text = await _call_llm(prompt)
     return _extract_json(text)
@@ -94,7 +105,10 @@ Create 4 distinct logo generation prompts. Each prompt must follow this exact st
 MANDATORY RULES:
 - Write in English only
 - Each prompt: 80-120 words, highly detailed
-- Color: specify exact color names (e.g., "deep navy blue and warm coral")
+- Color: use EXACTLY the colors from "colors" field. If "avoidColors" is specified, NEVER use those colors
+- If "keywords" contains specific motifs (e.g., "cherry blossom", "mountain"), incorporate them into the design
+- If "avoidElements" is specified, explicitly exclude those elements
+- If "preferredStyle" is specified (e.g., "Japanese style", "hand-drawn"), reflect that style
 - NEVER include any text/letters/words/typography instructions — the prompt must describe ONLY a visual icon/symbol
 - Include: "single icon mark, flat vector, centered on pure white background"
 - Describe the shape, proportions, and visual weight precisely
