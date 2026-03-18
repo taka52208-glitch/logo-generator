@@ -24,7 +24,6 @@ import LinkIcon from '@mui/icons-material/Link';
 import { useNavigate } from 'react-router-dom';
 import { useLogoStore } from '../stores/useLogoStore';
 import { logoApi } from '../services/api/logoApi';
-import { composeLogoWithText } from '../utils/logoComposer';
 
 const steps = ['案件を読み取り', '要件を分析', 'ロゴを生成', 'ロゴを選択'];
 
@@ -70,11 +69,8 @@ export const GeneratePage = () => {
     store.setRawLogos([]);
     const rawLogos = await logoApi.generateLogos(prompts);
     store.setRawLogos(rawLogos);
-
-    const composedLogos = await Promise.all(
-      rawLogos.map((logo) => composeLogoWithText(logo, analysis.companyName))
-    );
-    store.setLogos(composedLogos);
+    // Show raw logos (icon only) by default — text is added in ProposalPage
+    store.setLogos(rawLogos);
 
     store.setStep('selecting');
   };

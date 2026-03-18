@@ -44,14 +44,14 @@ export const ProposalPage = () => {
   const [revising, setRevising] = useState(false);
 
   // Font customization state
-  const [showText, setShowText] = useState(true);
+  const [showText, setShowText] = useState(false);
   const [fontId, setFontId] = useState('mplus');
   const [textColor, setTextColor] = useState('#1a1a2e');
   const [fontSize, setFontSize] = useState(50);
   const [recomposing, setRecomposing] = useState(false);
 
   const selectedLogo = store.logos[store.selectedLogoIndex];
-  const selectedRawLogo = store.rawLogos[store.selectedLogoIndex];
+  const selectedRawLogo = store.rawLogos[store.selectedLogoIndex] || selectedLogo;
   const selectedPrompt = store.prompts[store.selectedLogoIndex];
   const companyName = store.analysis?.companyName || '';
 
@@ -59,6 +59,11 @@ export const ProposalPage = () => {
     if (!selectedLogo || !store.analysis) {
       navigate('/');
       return;
+    }
+
+    // If rawLogos wasn't populated (old session), use logos as fallback
+    if (store.rawLogos.length === 0 && store.logos.length > 0) {
+      store.setRawLogos([...store.logos]);
     }
 
     if (!store.proposalText) {
