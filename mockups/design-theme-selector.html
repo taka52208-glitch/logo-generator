@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>デザインテーマ選択 - ロゴ作成ジェネレーター</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0a0a0a; color: #fff; padding: 40px 20px; }
+  h1 { text-align: center; font-size: 28px; margin-bottom: 8px; }
+  .subtitle { text-align: center; color: #888; margin-bottom: 48px; font-size: 14px; }
+  .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 32px; max-width: 1200px; margin: 0 auto; }
+  .card { border-radius: 16px; overflow: hidden; transition: transform 0.2s, box-shadow 0.2s; cursor: pointer; }
+  .card:hover { transform: translateY(-4px); box-shadow: 0 12px 40px rgba(0,0,0,0.4); }
+  .card-header { padding: 20px 24px 12px; }
+  .card-number { font-size: 12px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 4px; }
+  .card-title { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+  .card-desc { font-size: 13px; opacity: 0.7; }
+  .preview { padding: 0 24px 24px; }
+  .mock-app { border-radius: 12px; overflow: hidden; height: 320px; display: flex; flex-direction: column; }
+  .mock-header { height: 48px; display: flex; align-items: center; padding: 0 16px; gap: 12px; font-size: 14px; font-weight: 600; }
+  .mock-body { flex: 1; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+  .mock-title { font-size: 18px; font-weight: 700; }
+  .mock-subtitle { font-size: 12px; opacity: 0.6; }
+  .mock-textarea { flex: 1; border-radius: 8px; padding: 12px; font-size: 11px; opacity: 0.5; border: 1px solid; }
+  .mock-input { height: 36px; border-radius: 8px; padding: 0 12px; font-size: 11px; border: 1px solid; display: flex; align-items: center; opacity: 0.5; }
+  .mock-btn { height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; cursor: pointer; }
+  .mock-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+  .mock-logo-card { aspect-ratio: 1; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 10px; opacity: 0.4; }
+  .colors { display: flex; gap: 6px; margin-top: 12px; }
+  .color-dot { width: 20px; height: 20px; border-radius: 50%; }
+  .font-info { font-size: 11px; opacity: 0.5; margin-top: 4px; }
+
+  /* Theme 1: Midnight Craft - ダーク×パープルアクセント */
+  .t1 { background: #1a1a2e; border: 1px solid #2a2a4e; }
+  .t1 .card-number { color: #7c3aed; }
+  .t1 .mock-app { background: #16162a; }
+  .t1 .mock-header { background: #1e1e3a; color: #e2e2f0; border-bottom: 1px solid #2a2a4e; }
+  .t1 .mock-body { color: #e2e2f0; }
+  .t1 .mock-textarea { background: #1a1a30; border-color: #2a2a4e; color: #a0a0c0; }
+  .t1 .mock-input { background: #1a1a30; border-color: #2a2a4e; color: #a0a0c0; }
+  .t1 .mock-btn { background: linear-gradient(135deg, #7c3aed, #a855f7); color: #fff; }
+  .t1 .mock-logo-card { background: #1e1e3a; border: 1px solid #2a2a4e; color: #7c3aed; }
+
+  /* Theme 2: Studio White - ライト×ブルーアクセント */
+  .t2 { background: #ffffff; border: 1px solid #e5e7eb; color: #111; }
+  .t2 .card-number { color: #2563eb; }
+  .t2 .card-desc { color: #666; }
+  .t2 .mock-app { background: #f8fafc; border: 1px solid #e2e8f0; }
+  .t2 .mock-header { background: #fff; color: #1e293b; border-bottom: 1px solid #e2e8f0; }
+  .t2 .mock-body { color: #1e293b; }
+  .t2 .mock-textarea { background: #fff; border-color: #d1d5db; color: #64748b; }
+  .t2 .mock-input { background: #fff; border-color: #d1d5db; color: #64748b; }
+  .t2 .mock-btn { background: #2563eb; color: #fff; }
+  .t2 .mock-logo-card { background: #fff; border: 1px solid #e2e8f0; color: #2563eb; }
+
+  /* Theme 3: Neon Edge - ダーク×グリーンアクセント */
+  .t3 { background: #0d1117; border: 1px solid #1b2a1f; }
+  .t3 .card-number { color: #10b981; }
+  .t3 .mock-app { background: #0a0f12; }
+  .t3 .mock-header { background: #111820; color: #c9d1d9; border-bottom: 1px solid #1b2a1f; }
+  .t3 .mock-body { color: #c9d1d9; }
+  .t3 .mock-textarea { background: #0d1117; border-color: #1b2a1f; color: #8b949e; }
+  .t3 .mock-input { background: #0d1117; border-color: #1b2a1f; color: #8b949e; }
+  .t3 .mock-btn { background: #10b981; color: #000; font-weight: 700; }
+  .t3 .mock-logo-card { background: #111820; border: 1px solid #1b2a1f; color: #10b981; }
+
+  /* Theme 4: Warm Canvas - ウォーム×オレンジアクセント */
+  .t4 { background: #1c1917; border: 1px solid #2c2520; }
+  .t4 .card-number { color: #f59e0b; }
+  .t4 .mock-app { background: #1a1614; }
+  .t4 .mock-header { background: #211d1a; color: #e7e0d8; border-bottom: 1px solid #2c2520; }
+  .t4 .mock-body { color: #e7e0d8; }
+  .t4 .mock-textarea { background: #1a1614; border-color: #2c2520; color: #a09080; }
+  .t4 .mock-input { background: #1a1614; border-color: #2c2520; color: #a09080; }
+  .t4 .mock-btn { background: linear-gradient(135deg, #f59e0b, #ef4444); color: #fff; }
+  .t4 .mock-logo-card { background: #211d1a; border: 1px solid #2c2520; color: #f59e0b; }
+
+  @media (max-width: 768px) { .grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+  <h1>デザインテーマを選んでください</h1>
+  <p class="subtitle">番号（1〜4）をClaude Codeに伝えてください</p>
+
+  <div class="grid">
+    <!-- Theme 1 -->
+    <div class="card t1">
+      <div class="card-header">
+        <div class="card-number">THEME 1</div>
+        <div class="card-title">Midnight Craft</div>
+        <div class="card-desc">ダーク×パープル - クリエイティブ・プロフェッショナル感</div>
+        <div class="colors">
+          <div class="color-dot" style="background:#7c3aed"></div>
+          <div class="color-dot" style="background:#a855f7"></div>
+          <div class="color-dot" style="background:#1a1a2e"></div>
+          <div class="color-dot" style="background:#e2e2f0"></div>
+        </div>
+        <div class="font-info">Font: Inter / Noto Sans JP</div>
+      </div>
+      <div class="preview">
+        <div class="mock-app">
+          <div class="mock-header">&#9670; ロゴ作成ジェネレーター</div>
+          <div class="mock-body">
+            <div class="mock-title">ロゴを生成する</div>
+            <div class="mock-subtitle">案件の説明文を貼り付けてください</div>
+            <div class="mock-textarea">案件テキストを入力...</div>
+            <div class="mock-input">会社名・サービス名</div>
+            <div class="mock-btn">&#10024; ロゴを生成する</div>
+            <div class="mock-grid">
+              <div class="mock-logo-card">LOGO 1</div>
+              <div class="mock-logo-card">LOGO 2</div>
+              <div class="mock-logo-card">LOGO 3</div>
+              <div class="mock-logo-card">LOGO 4</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Theme 2 -->
+    <div class="card t2">
+      <div class="card-header">
+        <div class="card-number">THEME 2</div>
+        <div class="card-title">Studio White</div>
+        <div class="card-desc">ライト×ブルー - クリーン・信頼感のあるデザイン</div>
+        <div class="colors">
+          <div class="color-dot" style="background:#2563eb"></div>
+          <div class="color-dot" style="background:#3b82f6"></div>
+          <div class="color-dot" style="background:#f8fafc"></div>
+          <div class="color-dot" style="background:#1e293b"></div>
+        </div>
+        <div class="font-info">Font: Inter / Noto Sans JP</div>
+      </div>
+      <div class="preview">
+        <div class="mock-app">
+          <div class="mock-header">&#9670; ロゴ作成ジェネレーター</div>
+          <div class="mock-body">
+            <div class="mock-title" style="color:#1e293b">ロゴを生成する</div>
+            <div class="mock-subtitle" style="color:#64748b">案件の説明文を貼り付けてください</div>
+            <div class="mock-textarea">案件テキストを入力...</div>
+            <div class="mock-input">会社名・サービス名</div>
+            <div class="mock-btn">&#10024; ロゴを生成する</div>
+            <div class="mock-grid">
+              <div class="mock-logo-card">LOGO 1</div>
+              <div class="mock-logo-card">LOGO 2</div>
+              <div class="mock-logo-card">LOGO 3</div>
+              <div class="mock-logo-card">LOGO 4</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Theme 3 -->
+    <div class="card t3">
+      <div class="card-header">
+        <div class="card-number">THEME 3</div>
+        <div class="card-title">Neon Edge</div>
+        <div class="card-desc">ダーク×グリーン - テック・エッジの効いたデザイン</div>
+        <div class="colors">
+          <div class="color-dot" style="background:#10b981"></div>
+          <div class="color-dot" style="background:#34d399"></div>
+          <div class="color-dot" style="background:#0d1117"></div>
+          <div class="color-dot" style="background:#c9d1d9"></div>
+        </div>
+        <div class="font-info">Font: JetBrains Mono / Noto Sans JP</div>
+      </div>
+      <div class="preview">
+        <div class="mock-app">
+          <div class="mock-header">&#9670; ロゴ作成ジェネレーター</div>
+          <div class="mock-body">
+            <div class="mock-title">ロゴを生成する</div>
+            <div class="mock-subtitle">案件の説明文を貼り付けてください</div>
+            <div class="mock-textarea">案件テキストを入力...</div>
+            <div class="mock-input">会社名・サービス名</div>
+            <div class="mock-btn">&#9889; ロゴを生成する</div>
+            <div class="mock-grid">
+              <div class="mock-logo-card">LOGO 1</div>
+              <div class="mock-logo-card">LOGO 2</div>
+              <div class="mock-logo-card">LOGO 3</div>
+              <div class="mock-logo-card">LOGO 4</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Theme 4 -->
+    <div class="card t4">
+      <div class="card-header">
+        <div class="card-number">THEME 4</div>
+        <div class="card-title">Warm Canvas</div>
+        <div class="card-desc">ウォーム×オレンジ - クラフト感・温かみのあるデザイン</div>
+        <div class="colors">
+          <div class="color-dot" style="background:#f59e0b"></div>
+          <div class="color-dot" style="background:#ef4444"></div>
+          <div class="color-dot" style="background:#1c1917"></div>
+          <div class="color-dot" style="background:#e7e0d8"></div>
+        </div>
+        <div class="font-info">Font: DM Sans / Noto Sans JP</div>
+      </div>
+      <div class="preview">
+        <div class="mock-app">
+          <div class="mock-header">&#9670; ロゴ作成ジェネレーター</div>
+          <div class="mock-body">
+            <div class="mock-title">ロゴを生成する</div>
+            <div class="mock-subtitle">案件の説明文を貼り付けてください</div>
+            <div class="mock-textarea">案件テキストを入力...</div>
+            <div class="mock-input">会社名・サービス名</div>
+            <div class="mock-btn">&#9998; ロゴを生成する</div>
+            <div class="mock-grid">
+              <div class="mock-logo-card">LOGO 1</div>
+              <div class="mock-logo-card">LOGO 2</div>
+              <div class="mock-logo-card">LOGO 3</div>
+              <div class="mock-logo-card">LOGO 4</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
