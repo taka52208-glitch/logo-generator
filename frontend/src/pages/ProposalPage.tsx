@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import {
   Box,
   Typography,
@@ -13,17 +13,26 @@ import {
   CardMedia,
   CardActions,
   Divider,
+  Select,
+  MenuItem,
+  Slider,
+  FormControl,
+  InputLabel,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import DownloadIcon from '@mui/icons-material/Download';
 import EditIcon from '@mui/icons-material/Edit';
+import FormatSizeIcon from '@mui/icons-material/FormatSize';
 import { useNavigate } from 'react-router-dom';
 import { useLogoStore } from '../stores/useLogoStore';
 import { logoApi } from '../services/api/logoApi';
 import { generateAllMockups } from '../utils/mockupGenerator';
-import { composeLogoWithText } from '../utils/logoComposer';
+import { composeLogoWithText, FONT_OPTIONS, type ComposeOptions } from '../utils/logoComposer';
 import type { Mockups } from '../types';
+
+// Store raw (icon-only) logo separately for recomposition
+let rawLogoCache: string | null = null;
 
 export const ProposalPage = () => {
   const navigate = useNavigate();
@@ -35,6 +44,12 @@ export const ProposalPage = () => {
   const [revisionText, setRevisionText] = useState('');
   const [revising, setRevising] = useState(false);
 
+  // Font customization state
+  const [fontId, setFontId] = useState('mplus');
+  const [textColor, setTextColor] = useState('#1a1a2e');
+  const [fontSize, setFontSize] = useState(50);
+  const [recomposing, setRecomposing] = useState(false);
+
   const selectedLogo = store.logos[store.selectedLogoIndex];
   const selectedPrompt = store.prompts[store.selectedLogoIndex];
   const companyName = store.analysis?.companyName || '';
@@ -43,6 +58,11 @@ export const ProposalPage = () => {
     if (!selectedLogo || !store.analysis) {
       navigate('/');
       return;
+    }
+
+    // Cache the current logo as raw for recomposition
+    if (!rawLogoCache) {
+      rawLogoCache = selectedLogo;
     }
 
     if (!store.proposalText) {
@@ -81,32 +101,61 @@ export const ProposalPage = () => {
     }
   };
 
+  const handleRecompose = useCallback(async (opts: ComposeOptions) => {
+    const raw = rawLogoCache;
+    if (!raw) return;
+    setRecomposing(true);
+    try {
+      const composed = await composeLogoWithText(raw, companyName, opts);
+      store.replaceLogo(store.selectedLogoIndex, composed);
+
+      // Regenerate mockups
+      const newMockups = await generateAllMockups(composed, companyName);
+      setMockups(newMockups);
+    } catch {
+      // non-critical
+    } finally {
+      setRecomposing(false);
+    }
+  }, [companyName, store]);
+
+  const handleFontChange = async (newFontId: string) => {
+    setFontId(newFontId);
+    await handleRecompose({ fontId: newFontId, textColor, fontSize });
+  };
+
+  const handleColorChange = async (newColor: string) => {
+    setTextColor(newColor);
+    await handleRecompose({ fontId, textColor: newColor, fontSize });
+  };
+
+  const handleFontSizeCommit = async (_: unknown, newSize: number | number[]) => {
+    const size = typeof newSize === 'number' ? newSize : newSize[0];
+    setFontSize(size);
+    await handleRecompose({ fontId, textColor, fontSize: size });
+  };
+
   const handleRevise = async () => {
     if (!revisionText.trim() || !selectedPrompt) return;
     setRevising(true);
     setError(null);
 
     try {
-      // 1. LLMでプロンプトを修正
       const revisedPrompt = await logoApi.revisePrompt(selectedPrompt, revisionText.trim());
-
-      // 2. 修正プロンプトでロゴ再生成
       const [rawLogo] = await logoApi.generateLogos([revisedPrompt]);
 
-      // 3. テキスト合成
-      const composedLogo = await composeLogoWithText(rawLogo, companyName);
+      // Update raw cache
+      rawLogoCache = rawLogo;
 
-      // 4. ストア更新
+      const composedLogo = await composeLogoWithText(rawLogo, companyName, { fontId, textColor, fontSize });
       store.replacePrompt(store.selectedLogoIndex, revisedPrompt);
       store.replaceLogo(store.selectedLogoIndex, composedLogo);
 
-      // 5. モックアップ再生成
       setMockupsLoading(true);
       const newMockups = await generateAllMockups(composedLogo, companyName);
       setMockups(newMockups);
       setMockupsLoading(false);
 
-      // 6. 提案文再生成
       if (store.analysis) {
         store.setProposalText('');
         store.setStep('proposalGenerating');
@@ -140,12 +189,14 @@ export const ProposalPage = () => {
   };
 
   const handleBack = () => {
+    rawLogoCache = null;
     store.setProposalText('');
     store.setStep('selecting');
     navigate('/');
   };
 
   const isGenerating = store.step === 'proposalGenerating';
+  const isLoading = revising || recomposing;
 
   const mockupItems = mockups
     ? [
@@ -155,13 +206,21 @@ export const ProposalPage = () => {
       ]
     : [];
 
+  const colorOptions = [
+    { value: '#1a1a2e', label: 'ダークネイビー' },
+    { value: '#212121', label: 'ブラック' },
+    { value: '#3E2723', label: 'ダークブラウン' },
+    { value: '#1565C0', label: 'ブルー' },
+    { value: '#2E7D32', label: 'グリーン' },
+    { value: '#C49A6C', label: 'ゴールド' },
+    { value: '#7B1FA2', label: 'パープル' },
+    { value: '#D32F2F', label: 'レッド' },
+    { value: '#757575', label: 'グレー' },
+  ];
+
   return (
     <Box sx={{ maxWidth: 900, mx: 'auto' }}>
-      <Button
-        startIcon={<ArrowBackIcon />}
-        onClick={handleBack}
-        sx={{ mb: 2 }}
-      >
+      <Button startIcon={<ArrowBackIcon />} onClick={handleBack} sx={{ mb: 2 }}>
         ロゴ選択に戻る
       </Button>
 
@@ -174,9 +233,7 @@ export const ProposalPage = () => {
       <Grid container spacing={3}>
         <Grid size={{ xs: 12, md: 5 }}>
           <Paper sx={{ p: 3, position: 'sticky', top: 80 }}>
-            <Typography variant="h3" sx={{ mb: 2 }}>
-              選択したロゴ
-            </Typography>
+            <Typography variant="h3" sx={{ mb: 2 }}>選択したロゴ</Typography>
             {selectedLogo && (
               <Card sx={{ position: 'relative' }}>
                 <CardMedia
@@ -187,48 +244,88 @@ export const ProposalPage = () => {
                     aspectRatio: '1',
                     objectFit: 'contain',
                     bgcolor: '#fff',
-                    p: 2,
-                    opacity: revising ? 0.3 : 1,
+                    p: 1,
+                    opacity: isLoading ? 0.3 : 1,
                     transition: 'opacity 0.3s',
                   }}
                 />
-                {revising && (
+                {isLoading && (
                   <Box sx={{
-                    position: 'absolute',
-                    top: 0, left: 0, right: 0, bottom: 0,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 1,
+                    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1,
                   }}>
                     <CircularProgress size={40} />
                     <Typography variant="body2" color="text.secondary">
-                      修正中...
+                      {revising ? '修正中...' : '適用中...'}
                     </Typography>
                   </Box>
                 )}
               </Card>
             )}
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              sx={{ mt: 1.5, textAlign: 'center' }}
-            >
-              {companyName}
-            </Typography>
             <Button
-              variant="outlined"
-              fullWidth
-              startIcon={<DownloadIcon />}
+              variant="outlined" fullWidth startIcon={<DownloadIcon />}
               onClick={() => handleDownload(selectedLogo, `logo_${companyName || 'design'}.png`)}
-              sx={{ mt: 2 }}
-              disabled={revising}
+              sx={{ mt: 2 }} disabled={isLoading}
             >
               ロゴをダウンロード
             </Button>
 
-            {/* 修正機能 */}
+            {/* テキスト調整 */}
+            <Divider sx={{ my: 2 }} />
+            <Typography variant="subtitle2" sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              <FormatSizeIcon fontSize="small" /> テキスト調整
+            </Typography>
+
+            <FormControl fullWidth size="small" sx={{ mb: 1.5 }}>
+              <InputLabel>フォント</InputLabel>
+              <Select
+                value={fontId}
+                label="フォント"
+                onChange={(e) => handleFontChange(e.target.value)}
+                disabled={isLoading}
+              >
+                {FONT_OPTIONS.map((f) => (
+                  <MenuItem key={f.id} value={f.id} sx={{ fontFamily: `${f.family}, sans-serif` }}>
+                    {f.label}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            <FormControl fullWidth size="small" sx={{ mb: 1.5 }}>
+              <InputLabel>テキスト色</InputLabel>
+              <Select
+                value={textColor}
+                label="テキスト色"
+                onChange={(e) => handleColorChange(e.target.value)}
+                disabled={isLoading}
+              >
+                {colorOptions.map((c) => (
+                  <MenuItem key={c.value} value={c.value}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Box sx={{ width: 16, height: 16, borderRadius: '50%', bgcolor: c.value, border: '1px solid #ddd' }} />
+                      {c.label}
+                    </Box>
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+              テキストサイズ
+            </Typography>
+            <Slider
+              value={fontSize}
+              min={20}
+              max={80}
+              onChange={(_, v) => setFontSize(typeof v === 'number' ? v : v[0])}
+              onChangeCommitted={handleFontSizeCommit}
+              disabled={isLoading}
+              size="small"
+              sx={{ mb: 2 }}
+            />
+
+            {/* ロゴ修正 */}
             <Divider sx={{ my: 2 }} />
             <Typography variant="subtitle2" sx={{ mb: 1 }}>
               ロゴを修正する
@@ -236,22 +333,18 @@ export const ProposalPage = () => {
             <TextField
               label="修正指示"
               placeholder="例: もっと丸みを帯びた形に / 色を明るく / モチーフを桜に変えて"
-              multiline
-              rows={2}
-              fullWidth
+              multiline rows={2} fullWidth
               value={revisionText}
               onChange={(e) => setRevisionText(e.target.value)}
-              disabled={revising}
+              disabled={isLoading}
               inputProps={{ maxLength: 500 }}
-              size="small"
-              sx={{ mb: 1 }}
+              size="small" sx={{ mb: 1 }}
             />
             <Button
-              variant="contained"
-              fullWidth
+              variant="contained" fullWidth
               startIcon={revising ? <CircularProgress size={16} color="inherit" /> : <EditIcon />}
               onClick={handleRevise}
-              disabled={revising || !revisionText.trim()}
+              disabled={isLoading || !revisionText.trim()}
             >
               {revising ? '修正中...' : 'ロゴを修正'}
             </Button>
@@ -261,9 +354,7 @@ export const ProposalPage = () => {
         <Grid size={{ xs: 12, md: 7 }}>
           {/* モックアップ */}
           <Paper sx={{ p: 3, mb: 3 }}>
-            <Typography variant="h3" sx={{ mb: 2 }}>
-              モックアップ
-            </Typography>
+            <Typography variant="h3" sx={{ mb: 2 }}>モックアップ</Typography>
             {mockupsLoading ? (
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, py: 3, justifyContent: 'center' }}>
                 <CircularProgress size={24} />
@@ -281,16 +372,9 @@ export const ProposalPage = () => {
                         sx={{ width: '100%' }}
                       />
                       <CardActions sx={{ justifyContent: 'space-between', px: 2 }}>
-                        <Typography variant="body2" color="text.secondary">
-                          {item.label}
-                        </Typography>
-                        <Button
-                          size="small"
-                          startIcon={<DownloadIcon />}
-                          onClick={() => handleDownload(item.data, item.file)}
-                        >
-                          ダウンロード
-                        </Button>
+                        <Typography variant="body2" color="text.secondary">{item.label}</Typography>
+                        <Button size="small" startIcon={<DownloadIcon />}
+                          onClick={() => handleDownload(item.data, item.file)}>ダウンロード</Button>
                       </CardActions>
                     </Card>
                   </Grid>
@@ -302,17 +386,9 @@ export const ProposalPage = () => {
           {/* 提案文 */}
           <Paper sx={{ p: 3 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-              <Typography variant="h3">
-                提案文
-              </Typography>
-              <Button
-                variant="contained"
-                startIcon={<ContentCopyIcon />}
-                onClick={handleCopy}
-                disabled={!store.proposalText || isGenerating}
-              >
-                コピー
-              </Button>
+              <Typography variant="h3">提案文</Typography>
+              <Button variant="contained" startIcon={<ContentCopyIcon />}
+                onClick={handleCopy} disabled={!store.proposalText || isGenerating}>コピー</Button>
             </Box>
 
             {isGenerating ? (
@@ -322,9 +398,7 @@ export const ProposalPage = () => {
               </Box>
             ) : (
               <TextField
-                multiline
-                fullWidth
-                minRows={16}
+                multiline fullWidth minRows={16}
                 value={store.proposalText}
                 onChange={(e) => store.setProposalText(e.target.value)}
                 placeholder="提案文がここに表示されます..."
@@ -341,12 +415,8 @@ export const ProposalPage = () => {
         </Grid>
       </Grid>
 
-      <Snackbar
-        open={copySuccess}
-        autoHideDuration={2000}
-        onClose={() => setCopySuccess(false)}
-        message="提案文をコピーしました"
-      />
+      <Snackbar open={copySuccess} autoHideDuration={2000}
+        onClose={() => setCopySuccess(false)} message="提案文をコピーしました" />
     </Box>
   );
 };
