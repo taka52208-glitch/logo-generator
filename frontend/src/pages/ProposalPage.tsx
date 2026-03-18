@@ -11,7 +11,6 @@ import {
   Snackbar,
   Card,
   CardMedia,
-  CardActions,
   Divider,
   Select,
   MenuItem,
@@ -29,16 +28,16 @@ import FormatSizeIcon from '@mui/icons-material/FormatSize';
 import { useNavigate } from 'react-router-dom';
 import { useLogoStore } from '../stores/useLogoStore';
 import { logoApi } from '../services/api/logoApi';
-import { generateAllMockups } from '../utils/mockupGenerator';
+import { generateCombinedMockup } from '../utils/mockupGenerator';
 import { composeLogoWithText, FONT_OPTIONS, type ComposeOptions } from '../utils/logoComposer';
-import type { Mockups } from '../types';
+// Combined mockup is a single base64 image
 
 export const ProposalPage = () => {
   const navigate = useNavigate();
   const store = useLogoStore();
   const [error, setError] = useState<string | null>(null);
   const [copySuccess, setCopySuccess] = useState(false);
-  const [mockups, setMockups] = useState<Mockups | null>(null);
+  const [mockup, setMockup] = useState<string | null>(null);
   const [mockupsLoading, setMockupsLoading] = useState(false);
   const [revisionText, setRevisionText] = useState('');
   const [revising, setRevising] = useState(false);
@@ -70,7 +69,7 @@ export const ProposalPage = () => {
     if (!store.proposalText) {
       generateProposal();
     }
-    if (!mockups) {
+    if (!mockup) {
       generateMockups();
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -90,12 +89,13 @@ export const ProposalPage = () => {
     }
   };
 
-  const generateMockups = async () => {
-    if (!selectedLogo) return;
+  const generateMockups = async (logo?: string, name?: string) => {
+    const img = logo || selectedLogo;
+    if (!img) return;
     setMockupsLoading(true);
     try {
-      const result = await generateAllMockups(selectedLogo, companyName);
-      setMockups(result);
+      const result = await generateCombinedMockup(img, name || companyName);
+      setMockup(result);
     } catch {
       // non-critical
     } finally {
@@ -116,8 +116,8 @@ export const ProposalPage = () => {
       }
       store.replaceLogo(store.selectedLogoIndex, composed);
 
-      const newMockups = await generateAllMockups(composed, opts.text || companyName);
-      setMockups(newMockups);
+      const newMockup = await generateCombinedMockup(composed, opts.text || companyName);
+      setMockup(newMockup);
     } catch {
       // non-critical
     } finally {
@@ -172,10 +172,7 @@ export const ProposalPage = () => {
       }
       store.replaceLogo(store.selectedLogoIndex, composed);
 
-      setMockupsLoading(true);
-      const newMockups = await generateAllMockups(composed, companyName);
-      setMockups(newMockups);
-      setMockupsLoading(false);
+      await generateMockups(composed);
 
       if (store.analysis) {
         store.setProposalText('');
@@ -218,13 +215,10 @@ export const ProposalPage = () => {
   const isGenerating = store.step === 'proposalGenerating';
   const isLoading = revising || recomposing;
 
-  const mockupItems = mockups
-    ? [
-        { label: '名刺', data: mockups.businessCard, file: 'mockup_card.png' },
-        { label: '看板', data: mockups.signboard, file: 'mockup_sign.png' },
-        { label: 'Webサイト', data: mockups.website, file: 'mockup_web.png' },
-      ]
-    : [];
+  const handleDownloadMockup = () => {
+    if (!mockup) return;
+    handleDownload(mockup, 'mockup_all.png');
+  };
 
   const colorOptions = [
     { value: '#1a1a2e', label: 'ダークネイビー' },
@@ -400,29 +394,29 @@ export const ProposalPage = () => {
         <Grid size={{ xs: 12, md: 7 }}>
           {/* モックアップ */}
           <Paper sx={{ p: 3, mb: 3 }}>
-            <Typography variant="h3" sx={{ mb: 2 }}>モックアップ</Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+              <Typography variant="h3">モックアップ</Typography>
+              {mockup && (
+                <Button size="small" startIcon={<DownloadIcon />} onClick={handleDownloadMockup}>
+                  ダウンロード
+                </Button>
+              )}
+            </Box>
             {mockupsLoading ? (
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, py: 3, justifyContent: 'center' }}>
                 <CircularProgress size={24} />
                 <Typography color="text.secondary">モックアップを生成中...</Typography>
               </Box>
-            ) : (
-              <Grid container spacing={2}>
-                {mockupItems.map((item) => (
-                  <Grid size={{ xs: 12 }} key={item.label}>
-                    <Card>
-                      <CardMedia component="img" image={`data:image/png;base64,${item.data}`}
-                        alt={`${item.label}モックアップ`} sx={{ width: '100%' }} />
-                      <CardActions sx={{ justifyContent: 'space-between', px: 2 }}>
-                        <Typography variant="body2" color="text.secondary">{item.label}</Typography>
-                        <Button size="small" startIcon={<DownloadIcon />}
-                          onClick={() => handleDownload(item.data, item.file)}>ダウンロード</Button>
-                      </CardActions>
-                    </Card>
-                  </Grid>
-                ))}
-              </Grid>
-            )}
+            ) : mockup ? (
+              <Card>
+                <CardMedia
+                  component="img"
+                  image={`data:image/png;base64,${mockup}`}
+                  alt="モックアップ"
+                  sx={{ width: '100%' }}
+                />
+              </Card>
+            ) : null}
           </Paper>
 
           {/* 提案文 */}

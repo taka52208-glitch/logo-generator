@@ -56,6 +56,16 @@ class RevisePromptResponse(BaseModel):
     revisedPrompt: str
 
 
+class ReviseFromImageRequest(BaseModel):
+    imageBase64: str
+    revisionInstruction: str = Field(max_length=500)
+
+
+class ReviseFromImageResponse(BaseModel):
+    revisedPrompt: str
+    logo: str
+
+
 class FetchUrlRequest(BaseModel):
     url: str
 

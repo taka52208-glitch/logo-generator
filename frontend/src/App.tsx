@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MainLayout } from './layouts/MainLayout';
 import { GeneratePage } from './pages/GeneratePage';
 import { ProposalPage } from './pages/ProposalPage';
+import { ClientRevisionPage } from './pages/ClientRevisionPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 
 const queryClient = new QueryClient({
@@ -22,6 +23,7 @@ function App() {
           <Routes>
             <Route path="/" element={<GeneratePage />} />
             <Route path="/proposal" element={<ProposalPage />} />
+            <Route path="/revision" element={<ClientRevisionPage />} />
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </MainLayout>

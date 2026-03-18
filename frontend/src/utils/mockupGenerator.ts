@@ -359,6 +359,105 @@ export async function generateWebsiteMockup(
 }
 
 // ---------------------------------------------------------------------------
+// Combined mockup  (2400 x 1600)
+// ---------------------------------------------------------------------------
+export async function generateCombinedMockup(
+  logoBase64: string,
+  companyName: string,
+): Promise<string> {
+  const W = 2400;
+  const H = 1600;
+  const HALF_W = W / 2;
+  const HALF_H = H / 2;
+  const LABEL_AREA_H = 48;
+  const BORDER_COLOR = '#dee2e6';
+
+  const [websiteBase64, businessCardBase64, signboardBase64] = await Promise.all([
+    generateWebsiteMockup(logoBase64, companyName),
+    generateBusinessCardMockup(logoBase64, companyName),
+    generateSignboardMockup(logoBase64, companyName),
+  ]);
+
+  const [websiteImg, businessCardImg, signboardImg] = await Promise.all([
+    loadImage(toDataUrl(websiteBase64)),
+    loadImage(toDataUrl(businessCardBase64)),
+    loadImage(toDataUrl(signboardBase64)),
+  ]);
+
+  const canvas = document.createElement('canvas');
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext('2d')!;
+
+  // Background
+  ctx.fillStyle = '#f8f9fa';
+  ctx.fillRect(0, 0, W, H);
+
+  // --- Top half: Website mockup (full width, 2400 x 800) ---
+  const topContentH = HALF_H - LABEL_AREA_H;
+  const wsScale = Math.min(W / websiteImg.width, topContentH / websiteImg.height);
+  const wsW = websiteImg.width * wsScale;
+  const wsH = websiteImg.height * wsScale;
+  const wsX = (W - wsW) / 2;
+  const wsY = (topContentH - wsH) / 2;
+  ctx.drawImage(websiteImg, wsX, wsY, wsW, wsH);
+
+  // Website label
+  ctx.fillStyle = '#868e96';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = `500 28px ${FONT_FAMILY}`;
+  ctx.fillText('Webサイト', W / 2, topContentH + LABEL_AREA_H / 2);
+
+  // --- Horizontal border ---
+  ctx.strokeStyle = BORDER_COLOR;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(0, HALF_H);
+  ctx.lineTo(W, HALF_H);
+  ctx.stroke();
+
+  // --- Vertical border (bottom half only) ---
+  ctx.beginPath();
+  ctx.moveTo(HALF_W, HALF_H);
+  ctx.lineTo(HALF_W, H);
+  ctx.stroke();
+
+  // --- Bottom-left: Business card mockup (1200 x 800) ---
+  const bottomContentH = HALF_H - LABEL_AREA_H;
+  const bcScale = Math.min(HALF_W / businessCardImg.width, bottomContentH / businessCardImg.height);
+  const bcW = businessCardImg.width * bcScale;
+  const bcH = businessCardImg.height * bcScale;
+  const bcX = (HALF_W - bcW) / 2;
+  const bcY = HALF_H + (bottomContentH - bcH) / 2;
+  ctx.drawImage(businessCardImg, bcX, bcY, bcW, bcH);
+
+  // Business card label
+  ctx.fillStyle = '#868e96';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = `500 28px ${FONT_FAMILY}`;
+  ctx.fillText('名刺', HALF_W / 2, HALF_H + bottomContentH + LABEL_AREA_H / 2);
+
+  // --- Bottom-right: Signboard mockup (1200 x 800) ---
+  const sbScale = Math.min(HALF_W / signboardImg.width, bottomContentH / signboardImg.height);
+  const sbW = signboardImg.width * sbScale;
+  const sbH = signboardImg.height * sbScale;
+  const sbX = HALF_W + (HALF_W - sbW) / 2;
+  const sbY = HALF_H + (bottomContentH - sbH) / 2;
+  ctx.drawImage(signboardImg, sbX, sbY, sbW, sbH);
+
+  // Signboard label
+  ctx.fillStyle = '#868e96';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = `500 28px ${FONT_FAMILY}`;
+  ctx.fillText('看板', HALF_W + HALF_W / 2, HALF_H + bottomContentH + LABEL_AREA_H / 2);
+
+  return canvasToBase64(canvas);
+}
+
+// ---------------------------------------------------------------------------
 // Aggregate helper
 // ---------------------------------------------------------------------------
 export async function generateAllMockups(

@@ -1,6 +1,6 @@
 import json
 import httpx
-from app.config import GROQ_API_KEY
+from app.config import GROQ_API_KEY, GEMINI_API_KEY
 
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 GROQ_MODEL = "qwen/qwen3-32b"
@@ -255,3 +255,61 @@ Write the COMPLETE NEW prompt:"""
     text = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL).strip()
     text = text.strip('"').strip("'").strip("`")
     return text
+
+
+GEMINI_TEXT_URL = (
+    "https://generativelanguage.googleapis.com/v1beta/models/"
+    "gemini-2.5-flash-lite:generateContent"
+)
+
+
+async def describe_logo_image(image_base64: str) -> str:
+    """Use Gemini vision to describe a logo image as an image generation prompt."""
+    async with httpx.AsyncClient(timeout=60) as client:
+        resp = await client.post(
+            GEMINI_TEXT_URL,
+            headers={
+                "x-goog-api-key": GEMINI_API_KEY,
+                "Content-Type": "application/json",
+            },
+            json={
+                "contents": [{
+                    "parts": [
+                        {
+                            "inlineData": {
+                                "mimeType": "image/png",
+                                "data": image_base64,
+                            }
+                        },
+                        {
+                            "text": (
+                                "Describe this logo as an image generation prompt in English. "
+                                "Include: exact shapes, colors with HEX codes, composition, style. "
+                                "End with 'Crisp vector edges, centered on pure white #FFFFFF background'. "
+                                "Output ONLY the prompt, 60-90 words. No explanation."
+                            ),
+                        },
+                    ]
+                }],
+            },
+        )
+        resp.raise_for_status()
+        data = resp.json()
+
+        for candidate in data.get("candidates", []):
+            for part in candidate.get("content", {}).get("parts", []):
+                if "text" in part:
+                    import re
+                    text = part["text"].strip()
+                    text = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL).strip()
+                    text = text.strip('"').strip("'").strip("`")
+                    return text
+
+        raise ValueError("No text in Gemini response")
+
+
+async def revise_from_image(image_base64: str, revision_instruction: str) -> str:
+    """Describe uploaded logo, then rewrite with revision."""
+    original_prompt = await describe_logo_image(image_base64)
+    revised_prompt = await revise_prompt(original_prompt, revision_instruction)
+    return revised_prompt

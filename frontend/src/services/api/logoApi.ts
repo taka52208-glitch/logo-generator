@@ -27,6 +27,11 @@ export const logoApi = {
     return data.revisedPrompt;
   },
 
+  reviseFromImage: async (imageBase64: string, revisionInstruction: string): Promise<{ revisedPrompt: string; logo: string }> => {
+    const { data } = await apiClient.post('/api/revise-from-image', { imageBase64, revisionInstruction });
+    return data;
+  },
+
   generateProposal: async (
     analysis: Analysis,
     selectedPrompt: string

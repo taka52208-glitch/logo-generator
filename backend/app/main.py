@@ -15,11 +15,13 @@ from app.schemas import (
     GeneratePromptsResponse,
     GenerateProposalRequest,
     GenerateProposalResponse,
+    ReviseFromImageRequest,
+    ReviseFromImageResponse,
     RevisePromptRequest,
     RevisePromptResponse,
 )
 from app.services.cloudflare import generate_logos
-from app.services.gemini import analyze_brief, generate_prompts, generate_proposal, revise_prompt
+from app.services.gemini import analyze_brief, generate_prompts, generate_proposal, revise_prompt, revise_from_image
 from app.services.scraper import fetch_page_text
 
 app = FastAPI(title="ロゴ作成ジェネレーター API")
@@ -96,6 +98,16 @@ async def api_revise_prompt(req: RevisePromptRequest):
     try:
         revised = await revise_prompt(req.originalPrompt, req.revisionInstruction)
         return RevisePromptResponse(revisedPrompt=revised)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/revise-from-image", response_model=ReviseFromImageResponse)
+async def api_revise_from_image(req: ReviseFromImageRequest):
+    try:
+        revised_prompt = await revise_from_image(req.imageBase64, req.revisionInstruction)
+        logos = await generate_logos([revised_prompt])
+        return ReviseFromImageResponse(revisedPrompt=revised_prompt, logo=logos[0])
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
