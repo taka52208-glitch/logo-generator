@@ -353,9 +353,53 @@ export const ProposalPage = () => {
                     value={fontId} label="フォント"
                     onChange={(e) => handleFontChange(e.target.value)}
                     disabled={isLoading}
+                    MenuProps={{ PaperProps: { sx: { maxHeight: 400 } } }}
                   >
-                    {FONT_OPTIONS.map((f) => (
-                      <MenuItem key={f.id} value={f.id} sx={{ fontFamily: `${f.family}, sans-serif` }}>
+                    <MenuItem disabled sx={{ fontSize: '0.75rem', color: 'text.secondary', py: 0.5 }}>
+                      ── 日本語ゴシック ──
+                    </MenuItem>
+                    {FONT_OPTIONS.filter((f) => f.category === 'gothic').map((f) => (
+                      <MenuItem key={f.id} value={f.id} sx={{ fontFamily: `${f.family}, sans-serif`, fontWeight: f.weight }}>
+                        {f.label}
+                      </MenuItem>
+                    ))}
+                    <MenuItem disabled sx={{ fontSize: '0.75rem', color: 'text.secondary', py: 0.5 }}>
+                      ── 日本語丸ゴシック ──
+                    </MenuItem>
+                    {FONT_OPTIONS.filter((f) => f.category === 'rounded' || f.category === 'script').map((f) => (
+                      <MenuItem key={f.id} value={f.id} sx={{ fontFamily: `${f.family}, sans-serif`, fontWeight: f.weight }}>
+                        {f.label}
+                      </MenuItem>
+                    ))}
+                    <MenuItem disabled sx={{ fontSize: '0.75rem', color: 'text.secondary', py: 0.5 }}>
+                      ── 日本語明朝 ──
+                    </MenuItem>
+                    {FONT_OPTIONS.filter((f) => f.category === 'mincho').map((f) => (
+                      <MenuItem key={f.id} value={f.id} sx={{ fontFamily: `${f.family}, sans-serif`, fontWeight: f.weight }}>
+                        {f.label}
+                      </MenuItem>
+                    ))}
+                    <MenuItem disabled sx={{ fontSize: '0.75rem', color: 'text.secondary', py: 0.5 }}>
+                      ── ディスプレイ ──
+                    </MenuItem>
+                    {FONT_OPTIONS.filter((f) => f.category === 'display').map((f) => (
+                      <MenuItem key={f.id} value={f.id} sx={{ fontFamily: `${f.family}, sans-serif`, fontWeight: f.weight }}>
+                        {f.label}
+                      </MenuItem>
+                    ))}
+                    <MenuItem disabled sx={{ fontSize: '0.75rem', color: 'text.secondary', py: 0.5 }}>
+                      ── 欧文サンセリフ ──
+                    </MenuItem>
+                    {FONT_OPTIONS.filter((f) => f.category === 'sans').map((f) => (
+                      <MenuItem key={f.id} value={f.id} sx={{ fontFamily: `${f.family}, sans-serif`, fontWeight: f.weight }}>
+                        {f.label}
+                      </MenuItem>
+                    ))}
+                    <MenuItem disabled sx={{ fontSize: '0.75rem', color: 'text.secondary', py: 0.5 }}>
+                      ── 欧文セリフ ──
+                    </MenuItem>
+                    {FONT_OPTIONS.filter((f) => f.category === 'serif').map((f) => (
+                      <MenuItem key={f.id} value={f.id} sx={{ fontFamily: `${f.family}, sans-serif`, fontWeight: f.weight }}>
                         {f.label}
                       </MenuItem>
                     ))}

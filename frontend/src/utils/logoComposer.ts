@@ -5,21 +5,45 @@ export interface LogoFontOption {
   label: string;
   family: string;
   weight: number;
-  category: 'gothic' | 'mincho' | 'rounded' | 'western';
+  category: 'gothic' | 'mincho' | 'rounded' | 'display' | 'serif' | 'sans' | 'script';
 }
 
 export const FONT_OPTIONS: LogoFontOption[] = [
-  { id: 'mplus', label: 'M PLUS 1p', family: '"M PLUS 1p"', weight: 700, category: 'gothic' },
+  // ── 日本語ゴシック ──
+  { id: 'noto-sans', label: 'Noto Sans JP (Black)', family: '"Noto Sans JP"', weight: 900, category: 'gothic' },
+  { id: 'mplus', label: 'M PLUS 1p', family: '"M PLUS 1p"', weight: 800, category: 'gothic' },
   { id: 'zen-gothic', label: 'Zen角ゴシック', family: '"Zen Kaku Gothic New"', weight: 700, category: 'gothic' },
-  { id: 'noto-sans', label: 'Noto Sans JP', family: '"Noto Sans JP"', weight: 700, category: 'gothic' },
+  { id: 'dela', label: 'デラゴシック (極太)', family: '"Dela Gothic One"', weight: 400, category: 'display' },
+
+  // ── 日本語丸ゴシック ──
   { id: 'zen-maru', label: 'Zen丸ゴシック', family: '"Zen Maru Gothic"', weight: 700, category: 'rounded' },
-  { id: 'noto-serif', label: 'Noto Serif JP', family: '"Noto Serif JP"', weight: 700, category: 'mincho' },
-  { id: 'shippori', label: 'しっぽり明朝', family: '"Shippori Mincho"', weight: 700, category: 'mincho' },
+  { id: 'mplus-rounded', label: 'M PLUS Rounded', family: '"M PLUS Rounded 1c"', weight: 800, category: 'rounded' },
   { id: 'klee', label: 'Klee One', family: '"Klee One"', weight: 600, category: 'rounded' },
-  { id: 'montserrat', label: 'Montserrat', family: '"Montserrat"', weight: 700, category: 'western' },
-  { id: 'playfair', label: 'Playfair Display', family: '"Playfair Display"', weight: 700, category: 'western' },
-  { id: 'poppins', label: 'Poppins', family: '"Poppins"', weight: 600, category: 'western' },
-  { id: 'raleway', label: 'Raleway', family: '"Raleway"', weight: 600, category: 'western' },
+  { id: 'hachi', label: 'はちまるポップ', family: '"Hachi Maru Pop"', weight: 400, category: 'script' },
+
+  // ── 日本語明朝 ──
+  { id: 'noto-serif', label: 'Noto Serif JP (Black)', family: '"Noto Serif JP"', weight: 900, category: 'mincho' },
+  { id: 'shippori', label: 'しっぽり明朝 (太)', family: '"Shippori Mincho"', weight: 800, category: 'mincho' },
+  { id: 'zen-old', label: 'Zen旧明朝', family: '"Zen Old Mincho"', weight: 700, category: 'mincho' },
+  { id: 'shippori-antique', label: 'しっぽりアンティーク', family: '"Shippori Antique"', weight: 400, category: 'mincho' },
+
+  // ── 日本語ディスプレイ ──
+  { id: 'reggae', label: 'レゲエ One', family: '"Reggae One"', weight: 400, category: 'display' },
+
+  // ── 欧文サンセリフ ──
+  { id: 'montserrat', label: 'Montserrat (ExtraBold)', family: '"Montserrat"', weight: 800, category: 'sans' },
+  { id: 'poppins', label: 'Poppins', family: '"Poppins"', weight: 700, category: 'sans' },
+  { id: 'raleway', label: 'Raleway', family: '"Raleway"', weight: 700, category: 'sans' },
+  { id: 'oswald', label: 'Oswald', family: '"Oswald"', weight: 700, category: 'sans' },
+  { id: 'bebas', label: 'Bebas Neue', family: '"Bebas Neue"', weight: 400, category: 'sans' },
+  { id: 'russo', label: 'Russo One', family: '"Russo One"', weight: 400, category: 'display' },
+
+  // ── 欧文セリフ ──
+  { id: 'playfair', label: 'Playfair Display (Black)', family: '"Playfair Display"', weight: 900, category: 'serif' },
+  { id: 'cormorant', label: 'Cormorant Garamond', family: '"Cormorant Garamond"', weight: 700, category: 'serif' },
+  { id: 'abril', label: 'Abril Fatface', family: '"Abril Fatface"', weight: 400, category: 'serif' },
+  { id: 'lora', label: 'Lora', family: '"Lora"', weight: 700, category: 'serif' },
+  { id: 'cinzel', label: 'Cinzel (Black)', family: '"Cinzel"', weight: 900, category: 'serif' },
 ];
 
 export interface ComposeOptions {
