@@ -16,6 +16,7 @@ import {
   CircularProgress,
   Alert,
   InputAdornment,
+  Divider,
 } from '@mui/material';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
@@ -25,15 +26,25 @@ import { useLogoStore } from '../stores/useLogoStore';
 import { logoApi } from '../services/api/logoApi';
 import { composeLogoWithText } from '../utils/logoComposer';
 
-const steps = ['案件を入力', '要件を分析', 'ロゴを生成', 'ロゴを選択'];
+const steps = ['案件を読み取り', '要件を分析', 'ロゴを生成', 'ロゴを選択'];
 
 const getActiveStep = (step: string): number => {
   switch (step) {
     case 'input': return 0;
+    case 'fetching': return 0;
     case 'analyzing': return 1;
     case 'generating': return 2;
     case 'selecting': return 3;
     default: return 0;
+  }
+};
+
+const getLoadingText = (step: string): string => {
+  switch (step) {
+    case 'fetching': return '案件を読み取り中...';
+    case 'analyzing': return '要件を分析中...';
+    case 'generating': return 'ロゴを生成中...';
+    default: return '';
   }
 };
 
@@ -42,45 +53,50 @@ export const GeneratePage = () => {
   const store = useLogoStore();
   const [error, setError] = useState<string | null>(null);
   const [url, setUrl] = useState('');
-  const [fetchingUrl, setFetchingUrl] = useState(false);
+  const [showTextInput, setShowTextInput] = useState(false);
 
-  const handleFetchUrl = async () => {
+  const runPipeline = async (briefText: string) => {
+    store.setBriefText(briefText);
+
+    store.setStep('analyzing');
+    const analysis = await logoApi.analyze(briefText);
+    store.setAnalysis(analysis);
+
+    store.setStep('generating');
+    const prompts = await logoApi.generatePrompts(analysis);
+    store.setPrompts(prompts);
+
+    store.setLogos([]);
+    const rawLogos = await logoApi.generateLogos(prompts);
+
+    const composedLogos = await Promise.all(
+      rawLogos.map((logo) => composeLogoWithText(logo, analysis.companyName))
+    );
+    store.setLogos(composedLogos);
+
+    store.setStep('selecting');
+  };
+
+  const handleGenerateFromUrl = async () => {
     if (!url.trim()) return;
     setError(null);
-    setFetchingUrl(true);
+
     try {
+      store.setStep('fetching');
       const text = await logoApi.fetchUrl(url.trim());
-      store.setBriefText(text);
+      await runPipeline(text);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'URLの読み取りに失敗しました');
-    } finally {
-      setFetchingUrl(false);
+      setError(err instanceof Error ? err.message : 'エラーが発生しました');
+      store.setStep('input');
     }
   };
 
-  const handleGenerate = async () => {
+  const handleGenerateFromText = async () => {
     if (!store.briefText.trim()) return;
     setError(null);
 
     try {
-      store.setStep('analyzing');
-      const analysis = await logoApi.analyze(store.briefText);
-      store.setAnalysis(analysis);
-
-      store.setStep('generating');
-      const prompts = await logoApi.generatePrompts(analysis);
-      store.setPrompts(prompts);
-
-      store.setLogos([]);
-      const rawLogos = await logoApi.generateLogos(prompts);
-
-      // Compose: AI icon + company name text
-      const composedLogos = await Promise.all(
-        rawLogos.map((logo) => composeLogoWithText(logo, analysis.companyName))
-      );
-      store.setLogos(composedLogos);
-
-      store.setStep('selecting');
+      await runPipeline(store.briefText);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'エラーが発生しました');
       store.setStep('input');
@@ -92,7 +108,8 @@ export const GeneratePage = () => {
     navigate('/proposal');
   };
 
-  const isLoading = store.step === 'analyzing' || store.step === 'generating';
+  const isLoading = store.step === 'fetching' || store.step === 'analyzing' || store.step === 'generating';
+  const loadingText = getLoadingText(store.step);
 
   return (
     <Box sx={{ maxWidth: 800, mx: 'auto' }}>
@@ -115,7 +132,7 @@ export const GeneratePage = () => {
           ロゴを生成する
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-          案件URLを貼り付けるか、説明文を直接入力してください
+          案件URLを貼り付けてワンクリックで生成
         </Typography>
 
         <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
@@ -125,7 +142,7 @@ export const GeneratePage = () => {
             fullWidth
             value={url}
             onChange={(e) => setUrl(e.target.value)}
-            disabled={isLoading || fetchingUrl}
+            disabled={isLoading}
             slotProps={{
               input: {
                 startAdornment: (
@@ -136,45 +153,63 @@ export const GeneratePage = () => {
               },
             }}
           />
-          <Button
-            variant="outlined"
-            onClick={handleFetchUrl}
-            disabled={isLoading || fetchingUrl || !url.trim()}
-            sx={{ minWidth: 100, whiteSpace: 'nowrap' }}
-          >
-            {fetchingUrl ? <CircularProgress size={20} /> : '読み取り'}
-          </Button>
         </Box>
-
-        <TextField
-          label="案件テキスト"
-          placeholder="クラウドワークス・ランサーズの案件説明文をここに貼り付け..."
-          multiline
-          rows={6}
-          fullWidth
-          value={store.briefText}
-          onChange={(e) => store.setBriefText(e.target.value)}
-          disabled={isLoading}
-          inputProps={{ maxLength: 5000 }}
-          helperText={`${store.briefText.length} / 5,000`}
-          sx={{ mb: 2 }}
-        />
 
         <Button
           variant="contained"
           size="large"
           fullWidth
-          onClick={handleGenerate}
-          disabled={isLoading || !store.briefText.trim()}
+          onClick={handleGenerateFromUrl}
+          disabled={isLoading || !url.trim()}
           startIcon={isLoading ? <CircularProgress size={20} color="inherit" /> : <AutoAwesomeIcon />}
-          sx={{ py: 1.5 }}
+          sx={{ py: 1.5, mb: 2 }}
         >
-          {store.step === 'analyzing'
-            ? '要件を分析中...'
-            : store.step === 'generating'
-            ? 'ロゴを生成中...'
-            : 'ロゴを生成する'}
+          {isLoading ? loadingText : 'URLからロゴを生成'}
         </Button>
+
+        <Divider sx={{ my: 2 }}>
+          <Typography variant="body2" color="text.secondary">
+            または
+          </Typography>
+        </Divider>
+
+        {!showTextInput ? (
+          <Button
+            variant="text"
+            fullWidth
+            onClick={() => setShowTextInput(true)}
+            disabled={isLoading}
+          >
+            テキストを直接入力する
+          </Button>
+        ) : (
+          <>
+            <TextField
+              label="案件テキスト"
+              placeholder="案件説明文をここに貼り付け..."
+              multiline
+              rows={6}
+              fullWidth
+              value={store.briefText}
+              onChange={(e) => store.setBriefText(e.target.value)}
+              disabled={isLoading}
+              inputProps={{ maxLength: 5000 }}
+              helperText={`${store.briefText.length} / 5,000`}
+              sx={{ mb: 2 }}
+            />
+            <Button
+              variant="outlined"
+              size="large"
+              fullWidth
+              onClick={handleGenerateFromText}
+              disabled={isLoading || !store.briefText.trim()}
+              startIcon={isLoading ? <CircularProgress size={20} color="inherit" /> : <AutoAwesomeIcon />}
+              sx={{ py: 1.5 }}
+            >
+              {isLoading ? loadingText : 'テキストからロゴを生成'}
+            </Button>
+          </>
+        )}
       </Paper>
 
       {store.analysis && (
@@ -182,15 +217,32 @@ export const GeneratePage = () => {
           <Typography variant="h3" sx={{ mb: 2 }}>
             要件分析結果
           </Typography>
+          {store.analysis.companyName && (
+            <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 'bold' }}>
+              {store.analysis.companyName}
+            </Typography>
+          )}
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
             <Chip label={`業種: ${store.analysis.industry}`} variant="outlined" />
             <Chip label={`雰囲気: ${store.analysis.mood}`} variant="outlined" />
-            <Chip label={`ターゲット: ${store.analysis.target}`} variant="outlined" />
+            {store.analysis.target && (
+              <Chip label={`ターゲット: ${store.analysis.target}`} variant="outlined" />
+            )}
             <Chip label={`タイプ: ${store.analysis.logoType}`} variant="outlined" />
             {store.analysis.colors.map((color) => (
               <Chip key={color} label={color} variant="outlined" color="primary" />
             ))}
+            {store.analysis.keywords?.map((kw) => (
+              <Chip key={kw} label={kw} size="small" color="secondary" variant="outlined" />
+            ))}
           </Box>
+          {store.analysis.avoidColors && store.analysis.avoidColors.length > 0 && (
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 1 }}>
+              {store.analysis.avoidColors.map((c) => (
+                <Chip key={c} label={`NG: ${c}`} size="small" color="error" variant="outlined" />
+              ))}
+            </Box>
+          )}
           <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5 }}>
             {store.analysis.concept}
           </Typography>

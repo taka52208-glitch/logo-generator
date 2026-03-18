@@ -21,6 +21,7 @@ export interface Mockups {
 
 export type AppStep =
   | 'input'
+  | 'fetching'
   | 'analyzing'
   | 'generating'
   | 'selecting'
